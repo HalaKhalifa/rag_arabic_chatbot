@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports: ["6333:6333"]
+    volumes: [qdrant_storage:/qdrant/storage]
+
+  ragapp:
+    build: .
+    depends_on: [qdrant]
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      EMB_MODEL: abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16 #intfloat/multilingual-e5-base
+      GEN_MODEL: aubmindlab/aragpt2-base
+      GEN_MAX_NEW_TOKENS: 64
+      RETR_TOP_K: 5
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/app/data
+
+
+volumes:
+  qdrant_storage:
