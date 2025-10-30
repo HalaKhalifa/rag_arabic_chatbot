@@ -14,4 +14,4 @@ COPY ragchat ./ragchat
 COPY data ./data
 ENV PYTHONPATH=/app
 
-CMD ["python", "-m", "ragchat.cli", "chat"]
+CMD ["python", "-m", "ragchat.chat_cli"]
