@@ -1,5 +1,15 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+import re, unicodedata
+
+def _clean_text(s: str) -> str:
+    """Normalize and strip invalid Unicode for GPT-2 input."""
+    if not isinstance(s, str):
+        s = str(s)
+    s = unicodedata.normalize("NFC", s)
+    s = re.sub(r"[\ud800-\udfff]", "", s)  # remove surrogate chars
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
 
 class Generator:
     """Arabic GPT-2 text generator"""
@@ -15,16 +25,21 @@ class Generator:
         self.model.to(self.device)
 
     def generate(self, prompt: str) -> str:
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        if isinstance(prompt, (list, tuple)):
+            prompt = " ".join(str(x) for x in prompt)
+        elif not isinstance(prompt, str):
+            prompt = str(prompt)
+        prompt = _clean_text(prompt)
+        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512).to(self.device)
         with torch.no_grad():
             out = self.model.generate(
                 **inputs,
                 do_sample=True,
                 max_new_tokens=self.max_new_tokens,
-                temperature=self.temperature,
-                top_p=self.top_p,
+                temperature=0.6,
+                top_p=0.9,
                 no_repeat_ngram_size=3,
-                repetition_penalty=1.2,
+                repetition_penalty=1.4,
                 pad_token_id=self.tokenizer.eos_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
             )

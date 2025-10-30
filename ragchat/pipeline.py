@@ -19,14 +19,19 @@ class RagPipeline:
         self.s = services
 
     @staticmethod
-    def _build_prompt(question: str, contexts: List[str]) -> str:
-        ctx_block = "\n\n".join([f"- {c}" for c in contexts])
+    def _build_prompt(question: str, contexts: list[str]) -> str:
+        """
+        Build an Arabic instruction-style prompt for factual Q/A.
+        The instruction helps GPT-2 stay concise and answer only from context.
+        """
+        ctx_block = "\n".join([f"• {c.strip()}" for c in contexts if c.strip()])
         return (
-            "أنت مساعد للإجابة على الأسئلة باللغة العربية بالاعتماد على السياق التالي.\n"
-            "إذا لم تجد الإجابة في السياق، قل أنك غير متأكد.\n\n"
-            f"السياق:\n{ctx_block}\n\n"
-            f"السؤال: {question}\n"
-            "الإجابة: "
+            "أنت مساعد ذكي للإجابة على الأسئلة باللغة العربية.\n"
+            "اقرأ النصوص التالية واستخرج منها إجابة قصيرة وواضحة للسؤال.\n"
+            "إذا لم تجد الإجابة في النصوص، قل فقط: لا أعلم.\n\n"
+            f"النصوص:\n{ctx_block}\n\n"
+            f"السؤال: {question.strip()}\n"
+            "الإجابة:"
         )
 
     def ask(self, question: str, k: int | None = None) -> Dict:

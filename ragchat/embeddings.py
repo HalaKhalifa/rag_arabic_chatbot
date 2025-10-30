@@ -1,16 +1,28 @@
 from __future__ import annotations
 import numpy as np
+import unicodedata
+import re
+import torch
+from transformers import AutoTokenizer, AutoModel
 
-# Primary path: Sentence-Transformers
+def _clean_text(s: str) -> str:
+    """Normalize and strip invalid Unicode for Arabic text."""
+    if not isinstance(s, str):
+        s = str(s)
+    # normalize unicode composition
+    s = unicodedata.normalize("NFC", s)
+    # remove surrogate/control characters
+    s = re.sub(r"[\ud800-\udfff]", "", s)
+    # collapse whitespace
+    return re.sub(r"\s+", " ", s).strip()
+
+# Optional SentenceTransformer support
 try:
     from sentence_transformers import SentenceTransformer
     _HAS_ST = True
 except Exception:
     _HAS_ST = False
 
-# Fallback path: plain HF model + mean pooling
-from transformers import AutoTokenizer, AutoModel
-import torch
 
 def _mean_pooling(last_hidden_state, attention_mask):
     mask = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
@@ -18,12 +30,13 @@ def _mean_pooling(last_hidden_state, attention_mask):
     counts = torch.clamp(mask.sum(dim=1), min=1e-9)
     return summed / counts
 
+
 class TextEmbedder:
     """
     Robust embedder:
-    - Tries Sentence-Transformers.
-    - If model isn't ST-compatible, falls back to HF AutoModel + mean pooling.
-    Adds E5-style 'query:/passage:' prefixes when encoding (harmless for other models).
+    - Tries Sentence-Transformers first.
+    - Falls back to HF AutoModel + mean pooling if needed.
+    - Adds E5-style 'query:' / 'passage:' prefixes.
     """
     def __init__(self, model_name: str, device: str | None = None):
         self.model_name = model_name
@@ -34,7 +47,7 @@ class TextEmbedder:
             try:
                 self._st = SentenceTransformer(model_name, device=self.device)
             except Exception:
-                self._st = None  # will fall back
+                self._st = None
 
         if self._st is None:
             self.tok = AutoTokenizer.from_pretrained(model_name)
@@ -42,14 +55,30 @@ class TextEmbedder:
 
     @staticmethod
     def _add_prefix(texts, prefix: str):
-        return [f"{prefix}: {t}" for t in texts]
+        """Add E5-style prefix and sanitize text."""
+        clean_texts = [_clean_text(t) for t in texts]
+        return [f"{prefix}: {t}" for t in clean_texts]
 
     def _encode_hf(self, texts: list[str]) -> np.ndarray:
-        batch = self.tok(texts, padding=True, truncation=True, max_length=256, return_tensors="pt").to(self.device)
+        """Fallback encoding using plain HF model + mean pooling."""
+        # make sure texts is a list of clean strings
+        if isinstance(texts, (str, tuple)):
+            texts = list(texts) if isinstance(texts, tuple) else [texts]
+        elif not isinstance(texts, list):
+            texts = [str(texts)]
+        texts = [_clean_text(t) for t in texts]
+
+        batch = self.tok(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=256,
+            return_tensors="pt",
+        ).to(self.device)
+
         with torch.no_grad():
             out = self.model(**batch)
             pooled = _mean_pooling(out.last_hidden_state, batch["attention_mask"])
-            # normalize
             pooled = torch.nn.functional.normalize(pooled, p=2, dim=1)
         return pooled.cpu().numpy()
 
