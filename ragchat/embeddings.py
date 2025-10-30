@@ -16,7 +16,6 @@ def _clean_text(s: str) -> str:
     # collapse whitespace
     return re.sub(r"\s+", " ", s).strip()
 
-# Optional SentenceTransformer support
 try:
     from sentence_transformers import SentenceTransformer
     _HAS_ST = True
