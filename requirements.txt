@@ -9,3 +9,4 @@ typer>=0.12.3
 numpy>=1.26.4
 sentencepiece
 tiktoken
+tqdm

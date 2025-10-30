@@ -23,8 +23,12 @@ class Generator:
                 max_new_tokens=self.max_new_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
+                no_repeat_ngram_size=3,
+                repetition_penalty=1.2,
                 pad_token_id=self.tokenizer.eos_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
             )
+
         full = self.tokenizer.decode(out[0], skip_special_tokens=True)
         # return only the continuation
         return full[len(self.tokenizer.decode(inputs["input_ids"][0], skip_special_tokens=True)):].strip()
