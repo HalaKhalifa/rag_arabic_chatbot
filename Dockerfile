@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git build-essential cmake ninja-build && \
     rm -rf /var/lib/apt/lists/*
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && \

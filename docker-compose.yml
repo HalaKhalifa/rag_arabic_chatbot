@@ -14,6 +14,9 @@ services:
       QDRANT_URL: http://qdrant:6333
       EMB_MODEL: abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16
       GEN_MODEL: aubmindlab/aragpt2-base
+      GEN_TEMPERATURE: 0.3
+      GEN_MAX_NEW_TOKENS: 40
+      RETR_TOP_K: 3
     volumes:
       - ./data:/app/data
     depends_on:
@@ -28,6 +31,9 @@ services:
       QDRANT_URL: http://qdrant:6333
       EMB_MODEL: abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16
       GEN_MODEL: aubmindlab/aragpt2-base
+      GEN_TEMPERATURE: 0.3
+      GEN_MAX_NEW_TOKENS: 40
+      RETR_TOP_K: 3
     volumes:
       - ./data:/app/data
     depends_on:
@@ -42,6 +48,9 @@ services:
       QDRANT_URL: http://qdrant:6333
       EMB_MODEL: abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16
       GEN_MODEL: aubmindlab/aragpt2-base
+      GEN_TEMPERATURE: 0.3
+      GEN_MAX_NEW_TOKENS: 40
+      RETR_TOP_K: 3
     volumes:
       - ./data:/app/data
     depends_on:

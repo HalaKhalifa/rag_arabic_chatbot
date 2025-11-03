@@ -1,20 +1,8 @@
 from __future__ import annotations
 import numpy as np
-import unicodedata
-import re
 import torch
 from transformers import AutoTokenizer, AutoModel
-
-def _clean_text(s: str) -> str:
-    """Normalize and strip invalid Unicode for Arabic text."""
-    if not isinstance(s, str):
-        s = str(s)
-    # normalize unicode composition
-    s = unicodedata.normalize("NFC", s)
-    # remove surrogate/control characters
-    s = re.sub(r"[\ud800-\udfff]", "", s)
-    # collapse whitespace
-    return re.sub(r"\s+", " ", s).strip()
+from .utils import clean_text as _clean_text
 
 try:
     from sentence_transformers import SentenceTransformer
