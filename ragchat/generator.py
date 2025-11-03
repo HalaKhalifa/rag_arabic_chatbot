@@ -9,7 +9,7 @@ from transformers import (
 )
 from .utils import clean_text
 
-SEP = "\n- "
+SEP = "\n- "  # bullet sep for contexts
 
 def _arabic_only(s: str) -> str:
     s = re.sub(r"[^ء-ي0-9\s.,؟!:؛\-\(\)\"']", " ", s)
@@ -42,6 +42,7 @@ class Generator:
         else:
             # default path: GPT-2
             self.model = AutoModelForCausalLM.from_pretrained(model_name).to(self.device)
+            # AraGPT2 often lacks a pad token -> reuse eos
             if self.tokenizer.pad_token_id is None and self.tokenizer.eos_token_id is not None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
 
@@ -164,7 +165,7 @@ class Generator:
         ans = self._extract_after_answer_tag(completion)
         return _arabic_only(clean_text(ans))
 
-    # Public
+    # Public 
     def generate(self, question: str, contexts: list[str] | None = None) -> str:
         if self.model_type == "t5":
             input_text = self._t5_build(question, contexts)
