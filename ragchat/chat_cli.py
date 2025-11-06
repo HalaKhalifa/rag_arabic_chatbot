@@ -1,42 +1,51 @@
-import typer
-from .config import settings
-from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
+import os
 from .retriever import Retriever
 from .generator import Generator
-from .pipeline import RagPipeline, Services
+from .pipeline import ArabicRAGPipeline
+from .embeddings import TextEmbedder
+from .qdrant_index import QdrantIndex
 
-def main(
-    top_k: int = typer.Option(5, "--k", "-k", help="Top-K contexts to use."),
-    max_new_tokens: int = typer.Option(64, "--max-new-tokens"),
-    temperature: float = typer.Option(0.0, "--temperature"), 
-    top_p: float = typer.Option(0.95, "--top-p"),
-):
-    emb = TextEmbedder(settings.emb_model)
-    idx = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
-    retr = Retriever(emb, idx, settings.contexts_col, top_k)
-    gen = Generator(
-        settings.gen_model,
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        top_p=top_p,
+
+def main():
+    print("💬 Arabic RAG Chatbot (Gemini Edition). Type your question, or /exit to quit.\n")
+
+    # Initialize components
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+    collection_name = os.getenv("QDRANT_COLLECTION", "arcd_answers")
+    embedder = TextEmbedder(model_name=os.getenv("EMB_MODEL"))
+    index = QdrantIndex(url=qdrant_url)
+    retriever = Retriever(embedder=embedder, index=index, collection=collection_name)
+
+    generator = Generator(
+        model_name=os.getenv("GEN_MODEL", "models/gemini-2.5-flash"),
+        max_new_tokens=int(os.getenv("GEN_MAX_NEW_TOKENS", 512)),
+        temperature=float(os.getenv("GEN_TEMPERATURE", 0.4)),
+        top_p=float(os.getenv("GEN_TOP_P", 0.9)) if os.getenv("GEN_TOP_P") else 0.9,
     )
-    pipe = RagPipeline(Services(emb, idx, retr, gen))
 
-    print("\n💬 Arabic RAG Chatbot. Type your question, or /exit to quit.\n")
+    pipeline = ArabicRAGPipeline(
+        retriever=retriever,
+        generator=generator,
+        top_k=int(os.getenv("RETR_TOP_K", 5)),
+    )
+
+    # Interactive loop
     while True:
-        try:
-            q = input("سؤالك: ").strip()
-            if q.lower() in {"/exit", "exit", "quit"}:
-                break
-            out = pipe.ask(q, k=top_k)
-            print("\n--- السياق الأعلى ---")
-            for h in out["contexts"]:
-                print(f"• {h['text'][:120]}… (score={h['score']:.3f})")
-            print("\n--- الإجابة ---")
-            print(out["answer"], "\n")
-        except KeyboardInterrupt:
+        question = input("سؤالك: ").strip()
+        if not question or question.lower() in ["/exit", "exit", "خروج"]:
+            print("👋 وداعًا!")
             break
 
+        print("\n🤔 جارٍ البحث عن الإجابة...\n")
+        result = pipeline.run(question)
+
+        # Display results
+        print("✅ الإجابة:\n", result["answer"], "\n")
+        print("--- السياقات الأعلى ---")
+        for i, ctx in enumerate(result["contexts"][:3], start=1):
+            print(f"• {ctx[:250]}{'...' if len(ctx) > 250 else ''}")
+        print(f"\n⏱ الوقت المستغرق: {result['elapsed']:.2f} ثانية\n")
+        print("=" * 60)
+
 if __name__ == "__main__":
-    typer.run(main)
+    main()
