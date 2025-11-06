@@ -1,46 +1,45 @@
-from dataclasses import dataclass
-from typing import Dict
-from .config import settings
-from .preprocessing import normalize_arabic_text
-from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
+import time
 from .retriever import Retriever
 from .generator import Generator
+from .utils import clean_text
 
 
-@dataclass
-class Services:
-    embedder: TextEmbedder
-    index: QdrantIndex
-    retriever: Retriever
-    generator: Generator
+class ArabicRAGPipeline:
+    """
+    Simple RAG pipeline for Arabic QA:
+      1. Retrieve top contexts from Qdrant
+      2. Build prompt for Gemini
+      3. Generate Arabic answer
+    """
 
+    def __init__(self, retriever: Retriever, generator: Generator, top_k: int = 5):
+        self.retriever = retriever
+        self.generator = generator
+        self.top_k = top_k
 
-class RagPipeline:
-    def __init__(self, services: Services):
-        self.s = services
+    def run(self, question: str) -> dict:
+        start = time.time()
+        question_clean = clean_text(question)
 
-    def ask(self, question: str, k: int | None = None) -> Dict:
-        """
-        Retrieve relevant contexts from Qdrant,
-        and generate an Arabic answer using AraT5.
-        """
-        # Normalize and retrieve
-        q = normalize_arabic_text(question)
-        hits = self.s.retriever.similar_contexts(q)
+        # Retrieve
+        results = self.retriever.similar_contexts(question_clean)
+        contexts = [r["text"] for r in results if r.get("text")]
 
-        # Filter and select top-K contexts with good scores
-        k = k or settings.top_k
-        filtered_hits = [h for h in hits if h.get('score', 0) > 0.3]  # Filter low similarity
-        contexts = [h["text"] for h in filtered_hits[:k]]
-        
-        if not contexts and hits:
-            contexts = [hits[0]["text"]]
-        # Generate answer
-        answer = self.s.generator.generate(q, contexts)
+        if not contexts:
+            return {
+                "question": question,
+                "answer": "لم أجد سياقًا مناسبًا للإجابة على هذا السؤال.",
+                "contexts": [],
+                "elapsed": time.time() - start,
+            }
 
+        # Generate
+        answer = self.generator.generate(question_clean, contexts)
+
+        elapsed = time.time() - start
         return {
-            "question": q,
-            "contexts": hits[:k],
+            "question": question,
             "answer": answer,
+            "contexts": contexts,
+            "elapsed": elapsed,
         }
