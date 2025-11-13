@@ -4,12 +4,35 @@ from qdrant_client.http.models import VectorParams, Distance, PointStruct
 
 class QdrantIndex:
     def __init__(self, url: str, api_key: str | None = None):
-        self.client = QdrantClient(url=url, api_key=api_key)
+        self.client = QdrantClient(url=url, api_key=api_key, prefer_grpc=True, timeout=20.0, check_compatibility=False)
+
+    def ensure_collection(self, name: str, dim: int):
+        """
+        Create the collection only if it doesn't already exist.
+        """
+        existing = [c.name for c in self.client.get_collections().collections]
+        if name not in existing:
+            print(f"🆕 Creating new Qdrant collection: {name}")
+            self.client.create_collection(
+                collection_name=name,
+                vectors_config=VectorParams(size=dim, distance=Distance.COSINE),
+            )
+            self.client.create_payload_index(collection_name=name, field_name="id", field_schema="integer")
+            self.client.update_collection_aliases(
+                actions=[{"create_alias": {"alias_name": f"{name}_fast", "collection_name": name}}]
+                )
+
+
+        else:
+            print(f"✅ Using existing collection: {name}")
 
     def recreate(self, name: str, dim: int):
-        # drop if exists, then create fresh
+        """
+        Force recreation.
+        """
         existing = [c.name for c in self.client.get_collections().collections]
         if name in existing:
+            print(f"♻️ Recreating collection: {name}")
             self.client.delete_collection(name)
         self.client.recreate_collection(
             collection_name=name,
@@ -24,11 +47,10 @@ class QdrantIndex:
         self.client.upsert(collection_name=name, points=points)
 
     def search(self, name: str, vector, top_k: int = 5):
-        """
-        Search the Qdrant collection for the closest vectors.
-        """
         return self.client.search(
             collection_name=name,
             query_vector=vector.tolist(),
             limit=top_k,
+            with_payload=["context_text", "answer_text", "id"],
+            with_vectors=False,
         )

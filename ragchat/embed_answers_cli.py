@@ -8,9 +8,11 @@ def main(
     ds_path: str = "data/processed/arcd_clean_prepared",
     collection: str = None,
     model_name: str = None,
+    force: bool = typer.Option(False, "--force", "-f", help="Force recreation of the Qdrant collection."),
 ):
     """
-    Embed ARCD gold answers (answer[0]) and upsert to Qdrant.
+    Embed ARCD gold answers and upsert to Qdrant.
+    Use --force to drop and recreate the collection from scratch.
     """
     collection = collection or settings.answers_col
     model_name = model_name or settings.emb_model
@@ -27,10 +29,18 @@ def main(
     vecs = emb.encode_passages(answers)
 
     idx = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
-    idx.recreate(collection, vecs.shape[1])
+
+    if force:
+        idx.recreate(collection, vecs.shape[1])
+    else:
+        idx.ensure_collection(collection, vecs.shape[1])
+
     payloads = [{"answer_text": t, "id": i} for i, t in enumerate(answers)]
     idx.upsert(collection, vecs, payloads)
+
     print(f"✅ Upserted {len(answers)} answers → {collection}")
+    if force:
+        print("♻️ Collection recreated from scratch.")
 
 if __name__ == "__main__":
     typer.run(main)

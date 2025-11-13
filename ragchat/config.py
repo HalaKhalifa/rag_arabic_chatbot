@@ -14,5 +14,5 @@ class Settings:
     contexts_col: str = os.getenv("QDRANT_CTX_COLLECTION", "arcd_contexts")
     answers_col: str = os.getenv("QDRANT_ANS_COLLECTION", "arcd_answers")
     top_k: int = int(os.getenv("RETR_TOP_K", 5))
-
+    gemini_api_key: str | None = os.getenv("GEMINI_API_KEY")
 settings = Settings()
