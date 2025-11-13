@@ -4,7 +4,7 @@ from qdrant_client.http.models import VectorParams, Distance, PointStruct
 
 class QdrantIndex:
     def __init__(self, url: str, api_key: str | None = None):
-        self.client = QdrantClient(url=url, api_key=api_key, prefer_grpc=False, timeout=30.0, check_compatibility=False)
+        self.client = QdrantClient(url=url, api_key=api_key, prefer_grpc=True, timeout=20.0, check_compatibility=False)
 
     def ensure_collection(self, name: str, dim: int):
         """
@@ -17,6 +17,12 @@ class QdrantIndex:
                 collection_name=name,
                 vectors_config=VectorParams(size=dim, distance=Distance.COSINE),
             )
+            self.client.create_payload_index(collection_name=name, field_name="id", field_schema="integer")
+            self.client.update_collection_aliases(
+                actions=[{"create_alias": {"alias_name": f"{name}_fast", "collection_name": name}}]
+                )
+
+
         else:
             print(f"✅ Using existing collection: {name}")
 
@@ -39,10 +45,12 @@ class QdrantIndex:
             for i, v in enumerate(vectors)
         ]
         self.client.upsert(collection_name=name, points=points)
-        
+
     def search(self, name: str, vector, top_k: int = 5):
         return self.client.search(
             collection_name=name,
             query_vector=vector.tolist(),
             limit=top_k,
+            with_payload=["context_text", "answer_text", "id"],
+            with_vectors=False,
         )

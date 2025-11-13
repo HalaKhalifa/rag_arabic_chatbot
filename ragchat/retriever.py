@@ -10,16 +10,17 @@ class Retriever:
         self.index = index
         self.collection = collection
         self.top_k = top_k
+        self._cache = {}
 
     def similar_contexts(self, question: str) -> List[Dict]:
+        if question in self._cache:
+            return self._cache[question]
         qv = self.embedder.encode_queries([question])[0]
         hits = self.index.search(self.collection, qv, top_k=self.top_k)
-        results = []
-        for h in hits:
-            pl = h.payload or {}
-            results.append({
-                "score": float(h.score),
-                "text": pl.get("context_text") or pl.get("answer_text") or "",
-                "id": pl.get("id"),
-            })
+        results = [{
+            "score": float(h.score),
+            "text": h.payload.get("context_text") or h.payload.get("answer_text") or "",
+            "id": h.payload.get("id"),
+        } for h in hits]
+        self._cache[question] = results
         return results
