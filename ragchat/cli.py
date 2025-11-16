@@ -1,40 +1,30 @@
 import typer
-from datasets import load_dataset, load_from_disk, DatasetDict
+from datasets import load_from_disk
 from .config import settings
-from .preprocessing import normalize_arabic_text
+from .preprocessing import preprocess_arcd
 
-def prepare_arcd(out_dir: str = settings.processed_ds_dir):
+app = typer.Typer(help="Arabic RAG Data Preparation CLI")
+
+@app.command()
+def prepare_raw(out: str = settings.raw_arcd_dir):
     """
-    Load ARCD from HF and save to disk (raw -> processed dir).
+    Download ARCD dataset from HuggingFace and save to disk.
     """
+    from datasets import load_dataset
     ds = load_dataset("hsseinmz/arcd")
-    ds.save_to_disk(out_dir)
-    typer.echo(f"Saved ARCD to {out_dir}")
+    ds.save_to_disk(out)
+    typer.echo(f"📁 Raw ARCD dataset saved to {out}")
 
-def preprocess_arcd(
-    in_dir: str = "data/processed/arcd_clean",
-    out_dir: str = "data/processed/arcd_clean_prepared"
+@app.command()
+def preprocess(
+    in_dir: str = settings.raw_arcd_dir,
+    out_dir: str = settings.clean_arcd_dir,
+    group_size: int = typer.Option(5, help="Number of sentences per chunk"),
 ):
     """
-    Normalize Arabic text (context, question, answer[0]).
+    Apply normalization + sentence splitting + chunking.
     """
-    ds = load_from_disk(in_dir)
-
-    def _clean(example):
-        example["context"] = normalize_arabic_text(example.get("context", ""))
-        example["question"] = normalize_arabic_text(example.get("question", ""))
-        if "answers" in example and example["answers"].get("text"):
-            example["answers"]["text"][0] = normalize_arabic_text(example["answers"]["text"][0])
-        return example
-
-    if isinstance(ds, DatasetDict):
-        ds_clean = DatasetDict({k: v.map(_clean) for k, v in ds.items()})
-    else:
-        ds_clean = ds.map(_clean)
-
-    ds_clean.save_to_disk(out_dir)
-    print(f"✅ Preprocessed ARCD saved to {out_dir}")
-
+    preprocess_arcd(in_dir=in_dir, out_dir=out_dir, group_size=group_size)
 
 if __name__ == "__main__":
-    typer.run(preprocess_arcd)
+    app()

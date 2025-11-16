@@ -1,46 +1,82 @@
 import typer
 from datasets import load_from_disk
+from tqdm import tqdm
 from .config import settings
 from .embeddings import TextEmbedder
 from .qdrant_index import QdrantIndex
+from .utils import normalize_arabic_text
 
-def main(
-    ds_path: str = "data/processed/arcd_clean_prepared",
-    collection: str = None,
-    model_name: str = None,
-    force: bool = typer.Option(False, "--force", "-f", help="Force recreation of the Qdrant collection."),
+app = typer.Typer(help="Embed ARCD answers for retrieval evaluation.")
+
+@app.command()
+def embed_answers(
+    ds_path: str = settings.clean_arcd_dir,
+    collection: str = settings.answers_col,
+    model_name: str = settings.emb_model,
+    force: bool = typer.Option(False, "--force", "-f", help="Recreate answer collection"),
+    batch_size: int = typer.Option(32, help="Batch size for embedding"),
 ):
     """
-    Embed ARCD gold answers and upsert to Qdrant.
-    Use --force to drop and recreate the collection from scratch.
+    Embed ARCD answers into a separate Qdrant collection.
+    Not part of our pipeline, used for evaluating embedding model retrieval accuracy.
     """
-    collection = collection or settings.answers_col
-    model_name = model_name or settings.emb_model
 
+    print(f"📥 Loading cleaned dataset from: {ds_path}")
     ds = load_from_disk(ds_path)
-    split = ds.get("train") if hasattr(ds, "get") else ds
 
-    answers = [
-        (ex["answers"]["text"][0] if ex.get("answers", {}).get("text") else "")
-        for ex in split
-    ]
-
-    emb = TextEmbedder(model_name)
-    vecs = emb.encode_passages(answers)
-
-    idx = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
-
-    if force:
-        idx.recreate(collection, vecs.shape[1])
+    if hasattr(ds, "get"):
+        split = (
+            ds.get("train")
+            or ds.get("validation")
+            or next(iter(ds.values()))
+        )
     else:
-        idx.ensure_collection(collection, vecs.shape[1])
+        split = ds
 
-    payloads = [{"answer_text": t, "id": i} for i, t in enumerate(answers)]
-    idx.upsert(collection, vecs, payloads)
+    if "answers" not in split.features:
+        raise ValueError("❌ Dataset missing 'answers'. Ensure preprocessing was correct.")
 
-    print(f"✅ Upserted {len(answers)} answers → {collection}")
+    embedder = TextEmbedder(model_name=model_name)
+    idx = QdrantIndex(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
+    test_vec = embedder.embed_text("اختبار")
+    dim = len(test_vec)
+
     if force:
-        print("♻️ Collection recreated from scratch.")
+        idx.recreate(collection, dim)
+    else:
+        idx.ensure_collection(collection, dim)
+
+    print("📝 Extracting answers...")
+    answer_texts = []
+    payloads = []
+
+    for i, ex in enumerate(split):
+        answers = ex.get("answers", {}).get("text", [])
+        if answers:
+            ans = normalize_arabic_text(answers[0])
+            answer_texts.append(ans)
+            payloads.append({
+                "id": i,
+                "answer_text": ans,
+                "context": ex.get("context"),
+                "question": ex.get("question"),
+            })
+
+    print(f"📚 Total answers to embed: {len(answer_texts)}")
+    print("⚙️ Embedding answers and uploading...")
+
+    for start in tqdm(range(0, len(answer_texts), batch_size)):
+        batch = answer_texts[start : start + batch_size]
+        vectors = embedder.embed_batch(batch)
+        batch_payloads = payloads[start : start + batch_size]
+
+        idx.upsert(
+            name=collection,
+            vectors=vectors,
+            payloads=batch_payloads
+        )
+
+    print("🎉 Finished embedding answers for evaluation!")
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()
