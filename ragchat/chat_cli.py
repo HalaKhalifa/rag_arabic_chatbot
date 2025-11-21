@@ -16,7 +16,11 @@ app = typer.Typer(help="Arabic RAG Chatbot")
 def _print_contexts(contexts):
     console.print("\n[bold cyan]--- Top Retrieved Contexts ---[/bold cyan]")
     for c in contexts:
-        text = c.get("chunk") or c.get("context_text") or c.get("raw_context")
+        text = (
+            c.get("chunk")
+            or c.get("context_text")
+            or c.get("raw_context")
+        )
         score = c.get("score")
         idx = c.get("chunk_index")
 
@@ -38,9 +42,18 @@ def chat():
     console.print("\n💬 [bold green]Arabic RAG Chatbot[/bold green]")
     console.print("Type your question, or /exit to quit.\n")
 
-    embedder = TextEmbedder(settings.emb_model)
-    index = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
-    retriever = Retriever(embedder, index, settings.contexts_col, settings.top_k)
+    embedder = TextEmbedder()
+    index = QdrantIndex(
+        url=settings.qdrant_url,
+        api_key=settings.qdrant_api_key
+    )
+    retriever = Retriever(
+        embedder,
+        index,
+        settings.contexts_col,
+        settings.top_k
+    )
+
     generator = Generator(settings.gen_model)
     pipeline = RagPipeline(
         embedder=embedder,

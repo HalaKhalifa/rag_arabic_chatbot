@@ -4,6 +4,7 @@ from tqdm import tqdm
 from .config import settings
 from .embeddings import TextEmbedder
 from .qdrant_index import QdrantIndex
+from .utils import normalize_arabic_text
 
 app = typer.Typer(help="Embed ARCD contexts and store them in Qdrant.")
 
@@ -36,10 +37,16 @@ def embed_contexts(
         raise ValueError("❌ Dataset does not contain 'chunks'. Run preprocessing first.")
 
     embedder = TextEmbedder(model_name=model_name)
-    idx = QdrantIndex(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
 
-    example_vec = embedder.embed_text("مثال")
-    dim = len(example_vec)
+    idx = QdrantIndex()
+
+    print("🔎 Detecting embedding dimension...")
+    sample_vec = embedder.embed_batch(["مثال"])
+    if not sample_vec or len(sample_vec[0]) == 0:
+        raise RuntimeError("❌ Embedding model returned empty vector.")
+
+    dim = len(sample_vec[0])
+    print(f"🔢 Detected embedding dimension: {dim}")
 
     if force:
         idx.recreate(collection, dim)
@@ -48,28 +55,40 @@ def embed_contexts(
 
     all_texts = []
     all_payloads = []
-
-    print("🧩 Flattening chunks..")
+    print("🧩 Flattening chunks...")
 
     for i, ex in enumerate(split):
         for j, chunk in enumerate(ex["chunks"]):
-            all_texts.append(chunk)
+            text = normalize_arabic_text(chunk or "")
+
+            if not text.strip():
+                continue
+
+            all_texts.append(text)
             all_payloads.append({
                 "id": i,
                 "chunk_index": j,
-                "context_text": chunk,
+                "context_text": text,
                 "answer_text": ex["answers"]["text"][0] if ex.get("answers") else None,
                 "raw_context": ex["context"],
                 "question": ex["question"],
             })
 
     print(f"📚 Total chunks to embed: {len(all_texts)}")
-    print("⚙️ Embedding all chunks and uploading to Qdrant...")
+    print("🚀 Embedding and uploading to Qdrant...")
 
     for start in tqdm(range(0, len(all_texts), batch_size)):
-        batch = all_texts[start : start + batch_size]
+        batch = all_texts[start:start + batch_size]
+        batch_payloads = all_payloads[start:start + batch_size]
+
         vectors = embedder.embed_batch(batch)
-        batch_payloads = all_payloads[start : start + batch_size]
+
+        if not vectors:
+            continue
+        if len(vectors) != len(batch_payloads):
+            raise RuntimeError("❌ Vector/payload count mismatch.")
+        if any(len(v) == 0 for v in vectors):
+            raise RuntimeError("❌ Zero-dimension vector detected.")
 
         idx.upsert(
             name=collection,
@@ -78,7 +97,7 @@ def embed_contexts(
             start_id=start
         )
 
-    print("🎉 All chunks embedded and stored in QdrantSuccessfully!")
+    print("🎉 All chunks successfully embedded and stored in Qdrant!")
 
 if __name__ == "__main__":
     app()

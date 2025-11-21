@@ -24,20 +24,25 @@ class Retriever:
         - return ranked contexts
         """
         clean_query = normalize_arabic_text(query)
-        vector = self.embedder.embed_text(clean_query)
+        vector = self.embedder.embed_batch([clean_query])[0]
         results = self.index.search(
             name=self.collection,
             vector=vector,
             top_k=self.top_k
         )
+
         formatted = []
         for hit in results:
             payload = hit.payload or {}
 
             formatted.append({
                 "score": hit.score,
-                "chunk": payload.get("context_text"),
-                "chunk_index": payload.get("chunk_index"),
+                "chunk": payload.get("text")
+                         or payload.get("chunk")
+                         or payload.get("context_text")
+                         or payload.get("raw_context"),
+                "chunk_index": payload.get("index")
+                                or payload.get("chunk_index"),
                 "raw_context": payload.get("raw_context"),
                 "question": payload.get("question"),
                 "answer": payload.get("answer_text"),
