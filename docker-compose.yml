@@ -1,11 +1,12 @@
 services:
   qdrant:
-    image: qdrant/qdrant:v1.9.0
+    image: qdrant/qdrant:latest
     container_name: rag_arabic_chatbot-qdrant
+    restart: unless-stopped
     ports:
       - "6333:6333"
     volumes:
-      - ./data/qdrant_storage:/qdrant/storage
+      - qdrant_storage:/qdrant/storage
 
   ragapp:
     build: .
@@ -18,7 +19,6 @@ services:
       GEN_MAX_NEW_TOKENS: 512
       GEN_TEMPERATURE: 0.4
       RETR_TOP_K: 5
-
     volumes:
       - ./data:/app/data
     depends_on:
@@ -59,3 +59,6 @@ services:
       - ./data:/app/data
     depends_on:
       - qdrant
+
+volumes:
+  qdrant_storage:

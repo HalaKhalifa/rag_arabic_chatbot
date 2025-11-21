@@ -9,15 +9,16 @@ def preprocess_example(example: Dict[str, Any], group_size: int = 5) -> Dict[str
     Clean & chunk a single example from ARCD.
     Creates a new field: 'chunks' = list of sentence groups for embedding.
     """
-    context = normalize_arabic_text(example.get("context", ""))
-    question = normalize_arabic_text(example.get("question", ""))
+    # Safe normalization
+    context = normalize_arabic_text(example.get("context", "") or "")
+    question = normalize_arabic_text(example.get("question", "") or "")
 
     # Normalize first answer only (ARCD format)
     answers = example.get("answers", {})
     if isinstance(answers, dict) and "text" in answers and answers["text"]:
         ans_list = answers["text"]
         if isinstance(ans_list, list) and len(ans_list) > 0:
-            ans_list[0] = normalize_arabic_text(ans_list[0])
+            ans_list[0] = normalize_arabic_text(ans_list[0] or "")
             answers["text"] = ans_list
 
     example["context"] = context
@@ -29,10 +30,10 @@ def preprocess_example(example: Dict[str, Any], group_size: int = 5) -> Dict[str
 
     # Chunking
     chunks = chunk_sentences(sentences, group_size=group_size)
+    chunks = [c for c in chunks if c.strip()]
     example["chunks"] = chunks
 
     return example
-
 
 def preprocess_arcd(
     in_dir: str = settings.raw_arcd_dir,

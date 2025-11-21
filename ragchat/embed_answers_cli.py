@@ -18,7 +18,7 @@ def embed_answers(
 ):
     """
     Embed ARCD answers into a separate Qdrant collection.
-    Not part of our pipeline, used for evaluating embedding model retrieval accuracy.
+    Used for evaluating embedding model retrieval accuracy.
     """
 
     print(f"📥 Loading cleaned dataset from: {ds_path}")
@@ -37,14 +37,7 @@ def embed_answers(
         raise ValueError("❌ Dataset missing 'answers'. Ensure preprocessing was correct.")
 
     embedder = TextEmbedder(model_name=model_name)
-    idx = QdrantIndex(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
-    test_vec = embedder.embed_text("اختبار")
-    dim = len(test_vec)
-
-    if force:
-        idx.recreate(collection, dim)
-    else:
-        idx.ensure_collection(collection, dim)
+    idx = QdrantIndex()  # Auto-loads url + api key from settings
 
     print("📝 Extracting answers...")
     answer_texts = []
@@ -53,30 +46,62 @@ def embed_answers(
     for i, ex in enumerate(split):
         answers = ex.get("answers", {}).get("text", [])
         if answers:
-            ans = normalize_arabic_text(answers[0])
-            answer_texts.append(ans)
-            payloads.append({
-                "id": i,
-                "answer_text": ans,
-                "context": ex.get("context"),
-                "question": ex.get("question"),
-            })
+            raw = answers[0] or ""
+            ans = normalize_arabic_text(raw)
+
+            if ans.strip():  # Prevent empty text → zero-dimension vectors
+                answer_texts.append(ans)
+                payloads.append({
+                    "id": i,
+                    "answer_text": ans,
+                    "context": ex.get("context"),
+                    "question": ex.get("question"),
+                })
 
     print(f"📚 Total answers to embed: {len(answer_texts)}")
-    print("⚙️ Embedding answers and uploading...")
+
+    if not answer_texts:
+        print("⚠️ No answers found to embed. Aborting.")
+        return
+
+    example_vecs = embedder.embed_batch([answer_texts[0]])
+    if not example_vecs or len(example_vecs[0]) == 0:
+        raise RuntimeError("❌ Embedding model returned empty vector for sample answer.")
+
+    dim = len(example_vecs[0])
+    print(f"🔢 Detected embedding dimension: {dim}")
+
+    if force:
+        idx.recreate(collection, dim)
+    else:
+        idx.ensure_collection(collection, dim)
+
+    print("🚀 Embedding answers and uploading to Qdrant...")
 
     for start in tqdm(range(0, len(answer_texts), batch_size)):
         batch = answer_texts[start : start + batch_size]
         vectors = embedder.embed_batch(batch)
         batch_payloads = payloads[start : start + batch_size]
 
+        if not vectors:
+            continue
+
+        if len(vectors) != len(batch_payloads):
+            raise RuntimeError(
+                f"❌ Mismatch: {len(vectors)} vectors vs {len(batch_payloads)} payloads."
+            )
+
+        if any(len(v) == 0 for v in vectors):
+            raise RuntimeError("❌ Encountered 0-dimension vector in this batch.")
+
         idx.upsert(
             name=collection,
             vectors=vectors,
-            payloads=batch_payloads
+            payloads=batch_payloads,
+            start_id=start
         )
 
-    print("🎉 Finished embedding answers for evaluation!")
+    print("🎉 Finished embedding answers!")
 
 if __name__ == "__main__":
     app()

@@ -19,7 +19,7 @@ class RagPipeline:
         generator: Optional[Generator] = None,
         top_k: Optional[int] = None,
     ):
-        self.embedder = embedder or TextEmbedder(settings.emb_model)
+        self.embedder = embedder or TextEmbedder()
         self.retriever = retriever
         self.generator = generator or Generator(settings.gen_model)
         self.top_k = top_k or settings.top_k
