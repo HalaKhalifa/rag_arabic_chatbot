@@ -1,6 +1,5 @@
 venv/
 __pycache__/
-ragchat/__pycache__/
 *.pyc
 *.pyo
 .ipynb_checkpoints/
@@ -9,11 +8,6 @@ ragchat/__pycache__/
 .vscodevenv/
 venv/
 data/
-data/*
-data/raw/
-data/processed/
-data/qdrant_storage/
 *.pt
 *.bin
 *.ckpt
-notebooks/
