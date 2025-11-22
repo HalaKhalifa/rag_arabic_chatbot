@@ -127,10 +127,15 @@ class Generator:
             print("❌ Error while calling Gemini:", e)
             return "حدث خطأ أثناء الاتصال بنموذج Gemini."
 
-        text = ""
+        if getattr(response.candidates[0], "finish_reason", None) in ("MAX_TOKENS", "SAFETY"):
+            return "لا أجد إجابة واضحة في النص."
 
-        if hasattr(response, "text") and isinstance(response.text, str):
-            text = response.text.strip()
+        text = ""
+        try:
+            if hasattr(response, "text") and isinstance(response.text, str):
+                text = response.text.strip()
+        except Exception:
+            text = ""
 
         # Fallback parsing if still empty
         if not text and getattr(response, "candidates", None):
