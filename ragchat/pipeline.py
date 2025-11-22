@@ -45,7 +45,8 @@ class RagPipeline:
                 or None
             )
             if txt:
-                context_texts.append(txt)
+                trimmed = txt[:350]
+                context_texts.append(trimmed)
 
         # Generate
         answer = self.generator.generate(question, contexts=context_texts)
