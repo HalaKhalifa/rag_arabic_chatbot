@@ -1,46 +1,58 @@
-from dataclasses import dataclass
-from typing import Dict
-from .config import settings
-from .preprocessing import normalize_arabic_text
+from typing import List, Dict, Any, Optional
 from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
 from .retriever import Retriever
 from .generator import Generator
-
-
-@dataclass
-class Services:
-    embedder: TextEmbedder
-    index: QdrantIndex
-    retriever: Retriever
-    generator: Generator
-
+from .config import settings
 
 class RagPipeline:
-    def __init__(self, services: Services):
-        self.s = services
+    """
+    Full end-to-end Arabic RAG pipeline:
+    - Embed user question
+    - Retrieve top-k chunks from Qdrant
+    - Generate answer using Gemini with those contexts
+    """
 
-    def ask(self, question: str, k: int | None = None) -> Dict:
-        """
-        Retrieve relevant contexts from Qdrant,
-        and generate an Arabic answer using AraT5.
-        """
-        # Normalize and retrieve
-        q = normalize_arabic_text(question)
-        hits = self.s.retriever.similar_contexts(q)
+    def __init__(
+        self,
+        embedder: Optional[TextEmbedder] = None,
+        retriever: Optional[Retriever] = None,
+        generator: Optional[Generator] = None,
+        top_k: Optional[int] = None,
+    ):
+        self.embedder = embedder or TextEmbedder()
+        self.retriever = retriever
+        self.generator = generator or Generator(settings.gen_model)
+        self.top_k = top_k or settings.top_k
+        if self.retriever is None:
+            raise ValueError("Retriever must be provided to RagPipeline.")
 
-        # Filter and select top-K contexts with good scores
-        k = k or settings.top_k
-        filtered_hits = [h for h in hits if h.get('score', 0) > 0.3]  # Filter low similarity
-        contexts = [h["text"] for h in filtered_hits[:k]]
-        
-        if not contexts and hits:
-            contexts = [hits[0]["text"]]
-        # Generate answer
-        answer = self.s.generator.generate(q, contexts)
+    def answer(self, question: str) -> Dict[str, Any]:
+        """
+        Execute the full RAG flow:
+        1. Retrieve top-k contexts
+        2. Generate answer from Gemini
+        3. Return both answer + contexts
+        """
+
+        # Retrieve
+        contexts = self.retriever.retrieve(question)
+        context_texts = []
+        for c in contexts:
+            txt = (
+                c.get("chunk")
+                or c.get("context_text")
+                or c.get("raw_context")
+                or None
+            )
+            if txt:
+                trimmed = txt[:350]
+                context_texts.append(trimmed)
+
+        # Generate
+        answer = self.generator.generate(question, contexts=context_texts)
 
         return {
-            "question": q,
-            "contexts": hits[:k],
+            "question": question,
             "answer": answer,
+            "retrieved_contexts": contexts,
         }
