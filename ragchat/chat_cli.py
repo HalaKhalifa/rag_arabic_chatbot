@@ -1,42 +1,68 @@
 import typer
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.text import Text
 from .config import settings
 from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
 from .retriever import Retriever
+from .qdrant_index import QdrantIndex
 from .generator import Generator
-from .pipeline import RagPipeline, Services
+from .pipeline import RagPipeline
 
-def main(
-    top_k: int = typer.Option(5, "--k", "-k", help="Top-K contexts to use."),
-    max_new_tokens: int = typer.Option(64, "--max-new-tokens"),
-    temperature: float = typer.Option(0.0, "--temperature"), 
-    top_p: float = typer.Option(0.95, "--top-p"),
-):
-    emb = TextEmbedder(settings.emb_model)
-    idx = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
-    retr = Retriever(emb, idx, settings.contexts_col, top_k)
-    gen = Generator(
-        settings.gen_model,
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        top_p=top_p,
+console = Console()
+app = typer.Typer(help="Arabic RAG Chatbot")
+
+def _print_contexts(contexts):
+    console.print("\n[bold cyan]--- Top Retrieved Contexts ---[/bold cyan]")
+    for c in contexts:
+        text = c.get("chunk") or c.get("context_text") or c.get("raw_context")
+        score = c.get("score")
+        idx = c.get("chunk_index")
+
+        console.print(
+            Panel(
+                f"[bold]Chunk {idx}[/bold]\n"
+                f"[yellow]Score:[/yellow] {score:.4f}\n\n"
+                f"{text}",
+                title="Context",
+                border_style="cyan",
+            )
+        )
+
+@app.command()
+def chat():
+    """
+    Start an interactive Arabic RAG chat session.
+    """
+    console.print("\n💬 [bold green]Arabic RAG Chatbot[/bold green]")
+    console.print("Type your question, or /exit to quit.\n")
+
+    embedder = TextEmbedder(settings.emb_model)
+    index = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
+    retriever = Retriever(embedder, index, settings.contexts_col, settings.top_k)
+    generator = Generator(settings.gen_model)
+    pipeline = RagPipeline(
+        embedder=embedder,
+        retriever=retriever,
+        generator=generator,
+        top_k=settings.top_k,
     )
-    pipe = RagPipeline(Services(emb, idx, retr, gen))
 
-    print("\n💬 Arabic RAG Chatbot. Type your question, or /exit to quit.\n")
     while True:
-        try:
-            q = input("سؤالك: ").strip()
-            if q.lower() in {"/exit", "exit", "quit"}:
-                break
-            out = pipe.ask(q, k=top_k)
-            print("\n--- السياق الأعلى ---")
-            for h in out["contexts"]:
-                print(f"• {h['text'][:120]}… (score={h['score']:.3f})")
-            print("\n--- الإجابة ---")
-            print(out["answer"], "\n")
-        except KeyboardInterrupt:
+        q = console.input("\n[bold yellow]سؤالك:[/bold yellow] ").strip()
+        if q.lower() in ["/exit", "exit", "quit"]:
+            console.print("\n👋 Bye!\n")
             break
 
+        console.print("\n[cyan]🔎 Retrieving relevant context...[/cyan]")
+        result = pipeline.answer(q)
+        answer = result["answer"]
+        contexts = result["retrieved_contexts"]
+        _print_contexts(contexts)
+
+        console.print("\n[bold green]--- Answer ---[/bold green]\n")
+        console.print(Panel(answer, border_style="green"))
+
 if __name__ == "__main__":
-    typer.run(main)
+    app()
