@@ -2,7 +2,7 @@ import os
 import re
 from typing import List, Optional
 import google.generativeai as genai
-from .config import settings
+from .config import RAGSettings
 from .utils import normalize_arabic_text
 
 SEP = "\n- "  # bullet separator for contexts
@@ -37,20 +37,20 @@ class Generator:
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
     ):
-        self.model_name = model_name or settings.gen_model
-        self.api_key = api_key or settings.gemini_api_key or os.getenv("GEMINI_API_KEY")
+        self.model_name = model_name or RAGSettings.gen_model
+        self.api_key = api_key or RAGSettings.gemini_api_key or os.getenv("GEMINI_API_KEY")
 
         if not self.api_key:
             raise ValueError(
                 "GEMINI_API_KEY is not set. "
-                "Please export it as an environment variable or set settings.gemini_api_key."
+                "Please export it as an environment variable or set RAGSettings.gemini_api_key."
             )
 
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(self.model_name)
-        self.max_tokens = max_tokens or settings.gen_max_new_tokens
-        self.temperature = temperature or settings.temperature
-        self.top_p = top_p or settings.top_p
+        self.max_tokens = max_tokens or RAGSettings.gen_max_new_tokens
+        self.temperature = temperature or RAGSettings.temperature
+        self.top_p = top_p or RAGSettings.top_p
 
     def _format_contexts(self, contexts: Optional[List]) -> str:
         """

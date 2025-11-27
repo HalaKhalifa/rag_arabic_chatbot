@@ -1,12 +1,12 @@
 import typer
 from datasets import load_from_disk
-from .config import settings
+from .config import RAGSettings
 from .preprocessing import preprocess_arcd
 
 app = typer.Typer(help="Arabic RAG Data Preparation CLI")
 
 @app.command()
-def prepare_raw(out: str = settings.raw_arcd_dir):
+def prepare_raw(out: str = RAGSettings.raw_arcd_dir):
     """
     Download ARCD dataset from HuggingFace and save to disk.
     """
@@ -17,8 +17,8 @@ def prepare_raw(out: str = settings.raw_arcd_dir):
 
 @app.command()
 def preprocess(
-    in_dir: str = settings.raw_arcd_dir,
-    out_dir: str = settings.clean_arcd_dir,
+    in_dir: str = RAGSettings.raw_arcd_dir,
+    out_dir: str = RAGSettings.clean_arcd_dir,
     group_size: int = typer.Option(5, help="Number of sentences per chunk"),
 ):
     """

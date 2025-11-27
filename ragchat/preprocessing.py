@@ -1,7 +1,7 @@
 from datasets import load_from_disk, DatasetDict
 from typing import Dict, Any, List
 from .utils import normalize_arabic_text, split_into_sentences, chunk_sentences
-from .config import settings
+from .config import RAGSettings
 
 
 def preprocess_example(example: Dict[str, Any], group_size: int = 5) -> Dict[str, Any]:
@@ -35,8 +35,8 @@ def preprocess_example(example: Dict[str, Any], group_size: int = 5) -> Dict[str
 
 
 def preprocess_arcd(
-    in_dir: str = settings.raw_arcd_dir,
-    out_dir: str = settings.clean_arcd_dir,
+    in_dir: str = RAGSettings.raw_arcd_dir,
+    out_dir: str = RAGSettings.clean_arcd_dir,
     group_size: int = 5,
 ):
     """

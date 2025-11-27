@@ -1,7 +1,7 @@
 import typer
 from datasets import load_from_disk
 from tqdm import tqdm
-from .config import settings
+from .config import RAGSettings
 from .embeddings import TextEmbedder
 from .qdrant_index import QdrantIndex
 from .utils import normalize_arabic_text
@@ -10,9 +10,9 @@ app = typer.Typer(help="Embed ARCD answers for retrieval evaluation.")
 
 @app.command()
 def embed_answers(
-    ds_path: str = settings.clean_arcd_dir,
-    collection: str = settings.answers_col,
-    model_name: str = settings.emb_model,
+    ds_path: str = RAGSettings.clean_arcd_dir,
+    collection: str = RAGSettings.answers_col,
+    model_name: str = RAGSettings.emb_model,
     force: bool = typer.Option(False, "--force", "-f", help="Recreate answer collection"),
     batch_size: int = typer.Option(32, help="Batch size for embedding"),
 ):
@@ -37,7 +37,7 @@ def embed_answers(
         raise ValueError("❌ Dataset missing 'answers'. Ensure preprocessing was correct.")
 
     embedder = TextEmbedder(model_name=model_name)
-    idx = QdrantIndex(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
+    idx = QdrantIndex(url=RAGSettings.qdrant_url, api_key=RAGSettings.qdrant_api_key)
     test_vec = embedder.embed_text("اختبار")
     dim = len(test_vec)
 
@@ -73,7 +73,8 @@ def embed_answers(
         idx.upsert(
             name=collection,
             vectors=vectors,
-            payloads=batch_payloads
+            payloads=batch_payloads,
+            start_id=start
         )
 
     print("🎉 Finished embedding answers for evaluation!")

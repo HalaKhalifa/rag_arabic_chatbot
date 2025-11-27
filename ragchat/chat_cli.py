@@ -3,7 +3,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
-from .config import settings
+from .config import RAGSettings
 from .embeddings import TextEmbedder
 from .retriever import Retriever
 from .qdrant_index import QdrantIndex
@@ -38,15 +38,15 @@ def chat():
     console.print("\n💬 [bold green]Arabic RAG Chatbot[/bold green]")
     console.print("Type your question, or /exit to quit.\n")
 
-    embedder = TextEmbedder(settings.emb_model)
-    index = QdrantIndex(settings.qdrant_url, settings.qdrant_api_key)
-    retriever = Retriever(embedder, index, settings.contexts_col, settings.top_k)
-    generator = Generator(settings.gen_model)
+    embedder = TextEmbedder(RAGSettings.emb_model)
+    index = QdrantIndex(RAGSettings.qdrant_url, RAGSettings.qdrant_api_key)
+    retriever = Retriever(embedder, index, RAGSettings.contexts_col, RAGSettings.top_k)
+    generator = Generator(RAGSettings.gen_model)
     pipeline = RagPipeline(
         embedder=embedder,
         retriever=retriever,
         generator=generator,
-        top_k=settings.top_k,
+        top_k=RAGSettings.top_k,
     )
 
     while True:

@@ -2,7 +2,7 @@ import typer
 from datasets import load_from_disk, DatasetDict
 from tqdm import tqdm
 import time
-from .config import settings
+from .config import RAGSettings
 from .embeddings import TextEmbedder
 from .qdrant_index import QdrantIndex
 from .retriever import Retriever
@@ -12,7 +12,7 @@ from .evaluation import bleu, f1
 
 
 def main(
-    ds_path: str = settings.clean_arcd_dir,
+    ds_path: str = RAGSettings.clean_arcd_dir,
     n: int = typer.Option(50, "--n", "-n", help="Number of samples to evaluate"),
 ):
     """
@@ -28,24 +28,24 @@ def main(
         split = ds
 
     # Components: use the same configuration as chat / pipeline
-    embedder = TextEmbedder(settings.emb_model)
+    embedder = TextEmbedder(RAGSettings.emb_model)
     index = QdrantIndex(
-        url=settings.qdrant_url,
-        api_key=settings.qdrant_api_key,
+        url=RAGSettings.qdrant_url,
+        api_key=RAGSettings.qdrant_api_key,
     )
     retriever = Retriever(
         embedder=embedder,
         index=index,
-        collection=settings.contexts_col,
-        top_k=settings.top_k,
+        collection=RAGSettings.contexts_col,
+        top_k=RAGSettings.top_k,
     )
-    # Generator reads all configs (model name, API key, temperature, top_p, max tokens) from settings
+    # Generator reads all configs (model name, API key, temperature, top_p, max tokens) from RAGSettings
     generator = Generator()
     pipeline = RagPipeline(
         embedder=embedder,
         retriever=retriever,
         generator=generator,
-        top_k=settings.top_k,
+        top_k=RAGSettings.top_k,
     )
 
     preds, refs = [], []

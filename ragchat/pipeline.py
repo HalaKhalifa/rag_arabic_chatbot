@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from .embeddings import TextEmbedder
 from .retriever import Retriever
 from .generator import Generator
-from .config import settings
+from .config import RAGSettings
 
 class RagPipeline:
     """
@@ -19,10 +19,10 @@ class RagPipeline:
         generator: Optional[Generator] = None,
         top_k: Optional[int] = None,
     ):
-        self.embedder = embedder or TextEmbedder(settings.emb_model)
+        self.embedder = embedder or TextEmbedder(RAGSettings.emb_model)
         self.retriever = retriever
-        self.generator = generator or Generator(settings.gen_model)
-        self.top_k = top_k or settings.top_k
+        self.generator = generator or Generator(RAGSettings.gen_model)
+        self.top_k = top_k or RAGSettings.top_k
         if self.retriever is None:
             raise ValueError("Retriever must be provided to RagPipeline.")
 

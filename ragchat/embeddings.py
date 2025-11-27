@@ -2,7 +2,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from typing import List, Union
 from .utils import normalize_arabic_text, clean_unicode
-from .config import settings
+from .config import RAGSettings
 
 
 class TextEmbedder:
@@ -16,7 +16,7 @@ class TextEmbedder:
     """
 
     def __init__(self, model_name: str = None, device: str = None):
-        self.model_name = model_name or settings.emb_model
+        self.model_name = model_name or RAGSettings.emb_model
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
         print(f"🔍 Loading embedding model: {self.model_name}")

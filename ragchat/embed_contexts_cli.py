@@ -1,7 +1,7 @@
 import typer
 from datasets import load_from_disk
 from tqdm import tqdm
-from .config import settings
+from .config import RAGSettings
 from .embeddings import TextEmbedder
 from .qdrant_index import QdrantIndex
 
@@ -9,9 +9,9 @@ app = typer.Typer(help="Embed ARCD contexts and store them in Qdrant.")
 
 @app.command()
 def embed_contexts(
-    ds_path: str = settings.clean_arcd_dir,
-    collection: str = settings.contexts_col,
-    model_name: str = settings.emb_model,
+    ds_path: str = RAGSettings.clean_arcd_dir,
+    collection: str = RAGSettings.contexts_col,
+    model_name: str = RAGSettings.emb_model,
     force: bool = typer.Option(False, "--force", "-f", help="Recreate Qdrant collection"),
     batch_size: int = typer.Option(32, help="Embedding batch size"),
 ):
@@ -36,7 +36,7 @@ def embed_contexts(
         raise ValueError("❌ Dataset does not contain 'chunks'. Run preprocessing first.")
 
     embedder = TextEmbedder(model_name=model_name)
-    idx = QdrantIndex(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
+    idx = QdrantIndex(url=RAGSettings.qdrant_url, api_key=RAGSettings.qdrant_api_key)
 
     example_vec = embedder.embed_text("مثال")
     dim = len(example_vec)

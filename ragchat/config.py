@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import os
 @dataclass
-class settings:
+class RAGSettings:
     raw_arcd_dir: str = "data/raw/arcd_raw"
     clean_arcd_dir: str = "data/processed/arcd_clean"
     emb_model: str = os.getenv("EMB_MODEL","abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16")
