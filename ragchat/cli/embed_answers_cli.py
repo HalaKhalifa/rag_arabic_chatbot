@@ -1,11 +1,11 @@
 import typer
 from datasets import load_from_disk
 from tqdm import tqdm
-from .config import RAGSettings
-from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
-from .utils import normalize_arabic_text
-from .logger import logger
+from ragchat.config import RAGSettings
+from ragchat.core.embeddings import TextEmbedder
+from ragchat.storage.qdrant_index import QdrantIndex
+from ragchat.data.utils import normalize_arabic_text
+from ragchat.logger import logger
 
 app = typer.Typer(help="Embed ARCD answers for retrieval evaluation.")
 

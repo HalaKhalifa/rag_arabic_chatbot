@@ -1,8 +1,8 @@
 import typer
 from datasets import load_dataset
-from .config import RAGSettings
-from .preprocessing import preprocess_arcd
-from .logger import logger
+from ragchat.config import RAGSettings
+from ragchat.data.preprocessing import preprocess_arcd
+from ragchat.logger import logger
 
 app = typer.Typer(help="Arabic RAG Data Preparation CLI")
 

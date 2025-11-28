@@ -3,7 +3,7 @@ from collections import Counter
 from typing import List
 import sacrebleu
 
-from .utils import normalize_arabic_text
+from ragchat.data.utils import normalize_arabic_text
 
 
 def normalize_text(s: str) -> str:

@@ -1,9 +1,9 @@
 from typing import List, Dict, Any, Optional
-from .embeddings import TextEmbedder
-from .retriever import Retriever
-from .generator import Generator
-from .config import RAGSettings
-from .logger import logger
+from ragchat.core.embeddings import TextEmbedder
+from ragchat.core.retriever import Retriever
+from ragchat.core.generator import Generator
+from ragchat.config import RAGSettings
+from ragchat.logger import logger
 
 class RagPipeline:
     """

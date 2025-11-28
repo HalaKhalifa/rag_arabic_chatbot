@@ -1,9 +1,9 @@
 import torch
 from sentence_transformers import SentenceTransformer
-from typing import List, Union
-from .utils import normalize_arabic_text, clean_unicode
-from .config import RAGSettings
-from .logger import logger
+from typing import List
+from ragchat.data.utils import normalize_arabic_text, clean_unicode
+from ragchat.config import RAGSettings
+from ragchat.logger import logger
 
 class TextEmbedder:
     """

@@ -2,14 +2,13 @@ import typer
 from datasets import load_from_disk, DatasetDict
 from tqdm import tqdm
 import time
-from .config import RAGSettings
-from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
-from .retriever import Retriever
-from .generator import Generator
-from .pipeline import RagPipeline
-from .evaluation import bleu, f1
-
+from ragchat.config import RAGSettings
+from ragchat.core.embeddings import TextEmbedder
+from ragchat.core.retriever import Retriever
+from ragchat.storage.qdrant_index import QdrantIndex
+from ragchat.core.generator import Generator
+from ragchat.core.pipeline import RagPipeline
+from ragchat.evaluation.evaluation import bleu, f1
 
 def main(
     ds_path: str = RAGSettings.clean_arcd_dir,

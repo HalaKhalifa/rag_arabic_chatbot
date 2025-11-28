@@ -1,8 +1,8 @@
 from typing import List, Sequence
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from .config import RAGSettings
-from .logger import logger
+from ragchat.config import RAGSettings
+from ragchat.logger import logger
 
 class QdrantIndex:
     def __init__(self, url: str = None, api_key: str | None = None, timeout: float = 20.0):

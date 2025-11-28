@@ -2,9 +2,9 @@ import os
 import re
 from typing import List, Optional
 import google.generativeai as genai
-from .config import RAGSettings
-from .utils import normalize_arabic_text
-from .logger import logger
+from ragchat.config import RAGSettings
+from ragchat.data.utils import normalize_arabic_text
+from ragchat.logger import logger
 
 SEP = "\n- "  # bullet separator for contexts
 

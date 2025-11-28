@@ -1,8 +1,8 @@
 from typing import List, Dict, Any
-from .embeddings import TextEmbedder
-from .qdrant_index import QdrantIndex
-from .utils import normalize_arabic_text
-from .logger import logger
+from ragchat.core.embeddings import TextEmbedder
+from ragchat.storage.qdrant_index import QdrantIndex
+from ragchat.data.utils import normalize_arabic_text
+from ragchat.logger import logger
 
 class Retriever:
     """

@@ -1,8 +1,8 @@
 from datasets import load_from_disk, DatasetDict
 from typing import Dict, Any, List
-from .utils import normalize_arabic_text, split_into_sentences, chunk_sentences
-from .config import RAGSettings
-from .logger import logger
+from ragchat.data.utils import normalize_arabic_text, split_into_sentences, chunk_sentences
+from ragchat.config import RAGSettings
+from ragchat.logger import logger
 
 
 def preprocess_example(example: Dict[str, Any], group_size: int = 5) -> Dict[str, Any]:

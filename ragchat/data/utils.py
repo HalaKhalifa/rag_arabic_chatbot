@@ -1,6 +1,6 @@
 import re
 from typing import List
-from .logger import logger
+from ragchat.logger import logger
 
 def clean_unicode(text: str) -> str:
     try:

@@ -1,15 +1,13 @@
 import typer
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.text import Text
-from .config import RAGSettings
-from .embeddings import TextEmbedder
-from .retriever import Retriever
-from .qdrant_index import QdrantIndex
-from .generator import Generator
-from .pipeline import RagPipeline
-from .logger import logger
+from ragchat.config import RAGSettings
+from ragchat.core.embeddings import TextEmbedder
+from ragchat.core.retriever import Retriever
+from ragchat.storage.qdrant_index import QdrantIndex
+from ragchat.core.generator import Generator
+from ragchat.core.pipeline import RagPipeline
+from ragchat.logger import logger
 
 console = Console()
 app = typer.Typer(help="Arabic RAG Chatbot")
