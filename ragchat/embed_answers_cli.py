@@ -5,48 +5,55 @@ from .config import RAGSettings
 from .embeddings import TextEmbedder
 from .qdrant_index import QdrantIndex
 from .utils import normalize_arabic_text
+from .logger import logger
 
 app = typer.Typer(help="Embed ARCD answers for retrieval evaluation.")
 
-@app.command()
-def embed_answers(
-    ds_path: str = RAGSettings.clean_arcd_dir,
-    collection: str = RAGSettings.answers_col,
-    model_name: str = RAGSettings.emb_model,
-    force: bool = typer.Option(False, "--force", "-f", help="Recreate answer collection"),
-    batch_size: int = typer.Option(32, help="Batch size for embedding"),
-):
-    """
-    Embed ARCD answers into a separate Qdrant collection.
-    Not part of our pipeline, used for evaluating embedding model retrieval accuracy.
-    """
+def load_dataset_split(ds_path: str):
+    """Load dataset safely and return a single split."""
+    try:
+        logger.info(f"Loading cleaned dataset from {ds_path}")
+        ds = load_from_disk(ds_path)
+    except Exception as e:
+        logger.error(f"Failed to load dataset: {e}")
+        raise
 
-    print(f"📥 Loading cleaned dataset from: {ds_path}")
-    ds = load_from_disk(ds_path)
-
+    # The dataset may include multiple splits (train/validation/test),
+    # so we check for them in preferred order.
     if hasattr(ds, "get"):
-        split = (
+        return (
             ds.get("train")
             or ds.get("validation")
             or next(iter(ds.values()))
         )
     else:
-        split = ds
+        return ds
 
-    if "answers" not in split.features:
-        raise ValueError("❌ Dataset missing 'answers'. Ensure preprocessing was correct.")
+def prepare_qdrant_collection(embedder, idx, collection: str, force: bool):
+    """Ensure Qdrant collection exists with correct embedding dimension."""
+    try:
+        test_vec = embedder.embed_text("اختبار")
+        dim = len(test_vec)
+    except Exception as e:
+        logger.error(f"Failed to compute embedding dimension: {e}")
+        raise
 
-    embedder = TextEmbedder(model_name=model_name)
-    idx = QdrantIndex(url=RAGSettings.qdrant_url, api_key=RAGSettings.qdrant_api_key)
-    test_vec = embedder.embed_text("اختبار")
-    dim = len(test_vec)
+    try:
+        if force:
+            logger.info(f"Recreating Qdrant collection '{collection}'")
+            idx.recreate(collection, dim)
+        else:
+            logger.info(f"Ensuring Qdrant collection '{collection}' exists")
+            idx.ensure_collection(collection, dim)
+    except Exception as e:
+        logger.error(f"Failed to create/verify Qdrant collection: {e}")
+        raise
 
-    if force:
-        idx.recreate(collection, dim)
-    else:
-        idx.ensure_collection(collection, dim)
+    return dim
 
-    print("📝 Extracting answers...")
+
+def extract_answers(split):
+    """Extract answer texts + payloads from dataset split."""
     answer_texts = []
     payloads = []
 
@@ -62,22 +69,55 @@ def embed_answers(
                 "question": ex.get("question"),
             })
 
-    print(f"📚 Total answers to embed: {len(answer_texts)}")
-    print("⚙️ Embedding answers and uploading...")
+    return answer_texts, payloads
 
-    for start in tqdm(range(0, len(answer_texts), batch_size)):
-        batch = answer_texts[start : start + batch_size]
-        vectors = embedder.embed_batch(batch)
-        batch_payloads = payloads[start : start + batch_size]
+@app.command()
+def embed_answers(
+    ds_path: str = RAGSettings.clean_arcd_dir,
+    collection: str = RAGSettings.answers_col,
+    model_name: str = RAGSettings.emb_model,
+    force: bool = typer.Option(False, "--force", "-f", help="Recreate answer collection"),
+    batch_size: int = typer.Option(32, help="Batch size for embedding"),
+):
+    """Embed ARCD answers into a separate Qdrant collection."""
+    try:
+        # load + select split
+        split = load_dataset_split(ds_path)
 
-        idx.upsert(
-            name=collection,
-            vectors=vectors,
-            payloads=batch_payloads,
-            start_id=start
-        )
+        if "answers" not in split.features:
+            raise ValueError("Dataset missing 'answers'.")
 
-    print("🎉 Finished embedding answers for evaluation!")
+        # initialize the embedder + Qdrant
+        embedder = TextEmbedder(model_name=model_name)
+        idx = QdrantIndex(url=RAGSettings.qdrant_url, api_key=RAGSettings.qdrant_api_key)
+
+        prepare_qdrant_collection(embedder, idx, collection, force)
+
+        # extract answer texts
+        logger.info("Extracting answers...")
+        answer_texts, payloads = extract_answers(split)
+
+        logger.info(f"Total answers to embed: {len(answer_texts)}")
+        logger.info("Embedding answers and uploading...")
+
+        # batch embedding + upload
+        for start in tqdm(range(0, len(answer_texts), batch_size)):
+            batch = answer_texts[start: start + batch_size]
+            vectors = embedder.embed_batch(batch)
+            batch_payloads = payloads[start: start + batch_size]
+
+            idx.upsert(
+                name=collection,
+                vectors=vectors,
+                payloads=batch_payloads,
+                start_id=start
+            )
+
+        logger.info("Finished embedding answers!")
+
+    except Exception as e:
+        logger.error(f"Answer embedding failed: {e}")
+
 
 if __name__ == "__main__":
     app()

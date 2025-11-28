@@ -4,20 +4,24 @@ from typing import List, Optional
 import google.generativeai as genai
 from .config import RAGSettings
 from .utils import normalize_arabic_text
+from .logger import logger
 
 SEP = "\n- "  # bullet separator for contexts
-
 
 def _arabic_only(s: str) -> str:
     """
     Keep Arabic letters, digits, and basic punctuation only.
     This is a *final clean-up* step to avoid weird artifacts.
     """
-    if not isinstance(s, str):
-        s = str(s)
-    s = re.sub(r"[^ء-ي0-9\s.,؟!:؛\-\(\)\"']", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
+    try:
+        if not isinstance(s, str):
+            s = str(s)
+        s = re.sub(r"[^ء-ي0-9\s.,؟!:؛\-\(\)\"']", " ", s)
+        s = re.sub(r"\s+", " ", s).strip()
+        return s
+    except Exception as e:
+        logger.error(f"_arabic_only() failed: {e}")
+        return ""
 
 class Generator:
     """
@@ -37,20 +41,25 @@ class Generator:
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
     ):
-        self.model_name = model_name or RAGSettings.gen_model
-        self.api_key = api_key or RAGSettings.gemini_api_key or os.getenv("GEMINI_API_KEY")
+        try:
+            self.model_name = model_name or RAGSettings.gen_model
+            self.api_key = api_key or RAGSettings.gemini_api_key or os.getenv("GEMINI_API_KEY")
 
-        if not self.api_key:
-            raise ValueError(
-                "GEMINI_API_KEY is not set. "
-                "Please export it as an environment variable or set RAGSettings.gemini_api_key."
-            )
+            if not self.api_key:
+                raise ValueError(
+                    "GEMINI_API_KEY is not set. "
+                    "Please export it as an environment variable or set RAGSettings.gemini_api_key."
+                )
 
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(self.model_name)
-        self.max_tokens = max_tokens or RAGSettings.gen_max_new_tokens
-        self.temperature = temperature or RAGSettings.temperature
-        self.top_p = top_p or RAGSettings.top_p
+            genai.configure(api_key=self.api_key)
+            self.model = genai.GenerativeModel(self.model_name)
+            self.max_tokens = max_tokens or RAGSettings.gen_max_new_tokens
+            self.temperature = temperature or RAGSettings.temperature
+            self.top_p = top_p or RAGSettings.top_p
+            logger.info(f"Loaded Gemini model: {self.model_name}")
+        except Exception as e:
+            logger.error(f"Failed to initialize Generator: {e}")
+            raise
 
     def _format_contexts(self, contexts: Optional[List]) -> str:
         """
@@ -59,57 +68,69 @@ class Generator:
         - list[dict] with keys like 'chunk', 'context_text', 'raw_context'
         and returns a single bullet-list string.
         """
-        if not contexts:
+        try:
+            if not contexts:
+                return "لا يوجد سياق متاح."
+
+            pieces: List[str] = []
+
+            for c in contexts:
+                if isinstance(c, str):
+                    txt = c
+                elif isinstance(c, dict):
+                    txt = (
+                        c.get("chunk")
+                        or c.get("context_text")
+                        or c.get("raw_context")
+                        or ""
+                    )
+                else:
+                    txt = str(c)
+
+                txt = normalize_arabic_text(txt)
+                if txt:
+                    pieces.append(f"- {txt}")
+
+            if not pieces:
+                return "لا يوجد سياق متاح."
+
+            return "\n".join(pieces)
+        except Exception as e:
+            logger.error(f"Context formatting failed: {e}")
             return "لا يوجد سياق متاح."
-
-        pieces: List[str] = []
-
-        for c in contexts:
-            if isinstance(c, str):
-                txt = c
-            elif isinstance(c, dict):
-                txt = (
-                    c.get("chunk")
-                    or c.get("context_text")
-                    or c.get("raw_context")
-                    or ""
-                )
-            else:
-                txt = str(c)
-
-            txt = normalize_arabic_text(txt)
-            if txt:
-                pieces.append(f"- {txt}")
-
-        if not pieces:
-            return "لا يوجد سياق متاح."
-
-        return "\n".join(pieces)
 
     def _build_prompt(self, question: str, contexts: Optional[List]) -> str:
         """
         Build the full Arabic prompt for Gemini.
         """
-        clean_question = normalize_arabic_text(question)
-        context_block = self._format_contexts(contexts)
+        try:
+            clean_question = normalize_arabic_text(question)
+            context_block = self._format_contexts(contexts)
 
-        prompt = f"""
-            أنت مساعد ذكي للإجابة عن الأسئلة باللغة العربية بالاعتماد فقط على النصوص المعطاة في قسم (السياق).
+            prompt = f"""
+                أنت مساعد ذكي للإجابة عن الأسئلة باللغة العربية بالاعتماد فقط على النصوص المعطاة في قسم (السياق).
 
-            السياق:
-            {context_block}
+                السياق:
+                {context_block}
 
-            السؤال:
-            {clean_question}
+                السؤال:
+                {clean_question}
 
-            التعليمات:
-            - أجب عن السؤال السابق باللغة العربية الفصحى.
-            - اعتمد فقط على المعلومات الموجودة في (السياق).
-            - إذا لم تجد الإجابة في السياق، قل بوضوح: "لا أجد إجابة واضحة في النص." ولا تحاول التخمين.
-            - اجعل الإجابة مختصرة وواضحة ومباشرة.
-        """.strip()
+                التعليمات:
+                - أجب عن السؤال السابق باللغة العربية الفصحى.
+                - اعتمد فقط على المعلومات الموجودة في (السياق).
+                - إذا لم تجد الإجابة في السياق، قل بوضوح: "لا أجد إجابة واضحة في النص." ولا تحاول التخمين.
+                - اجعل الإجابة مختصرة وواضحة ومباشرة.
+            """.strip()
 
-        return prompt
+            return prompt
+        except Exception as e:
+            logger.error(f"Prompt building failed: {e}")
+            return (
+                "السياق:\nلا يوجد سياق متاح.\n"
+                "السؤال:\n" + question +
+                "\nالتعليمات: أجب قدر استطاعتك."
+            )
 
     def _gemini_generate(self, question: str, contexts: Optional[List]) -> str:
         prompt = self._build_prompt(question, contexts)
@@ -124,40 +145,53 @@ class Generator:
                 },
             )
         except Exception as e:
-            print("❌ Error while calling Gemini:", e)
+            logger.error(f"Gemini API call failed: {e}")
             return "حدث خطأ أثناء الاتصال بنموذج Gemini."
-
-        if getattr(response.candidates[0], "finish_reason", None) in ("MAX_TOKENS", "SAFETY"):
-            return "لا أجد إجابة واضحة في النص."
+        try:
+            if getattr(response.candidates[0], "finish_reason", None) in ("MAX_TOKENS", "SAFETY"):
+                return "لا أجد إجابة واضحة في النص."
+        except Exception as e:
+            logger.error(f"Failed to interpret Gemini finish_reason: {e}")
 
         text = ""
         try:
             if hasattr(response, "text") and isinstance(response.text, str):
                 text = response.text.strip()
         except Exception:
+            logger.error(f"Failed to extract primary Gemini text: {e}")
             text = ""
 
         # Fallback parsing if still empty
         if not text and getattr(response, "candidates", None):
-            for c in response.candidates:
-                content = getattr(c, "content", None)
-                parts = getattr(content, "parts", None) if content else None
-                if parts:
-                    for p in parts:
-                        part_text = getattr(p, "text", None)
-                        if part_text:
-                            text = part_text.strip()
-                            break
-                if text:
-                    break
+            try:
+                for c in response.candidates:
+                    content = getattr(c, "content", None)
+                    parts = getattr(content, "parts", None) if content else None
+                    if parts:
+                        for p in parts:
+                            part_text = getattr(p, "text", None)
+                            if part_text:
+                                text = part_text.strip()
+                                break
+                    if text:
+                        break
+            except Exception as e:
+                logger.error(f"Fallback parsing of Gemini response failed: {e}")
         # Final fallback
         if not text:
-            print("⚠️ Gemini returned empty or filtered text — raw response:", response)
+            logger.warning(f"Gemini returned empty or filtered text — raw response: {response}")
             text = "لم أجد إجابة واضحة من النص المعطى."
-
-        text = normalize_arabic_text(text)
-        return _arabic_only(text)
+        try:
+            text = normalize_arabic_text(text)
+            return _arabic_only(text)
+        except Exception as e:
+            logger.error(f"Final cleaning failed: {e}")
+            return text or "حدث خطأ في معالجة الإجابة."
 
     def generate(self, question: str, contexts: Optional[List] = None) -> str:
         """Main entry point for generation."""
-        return self._gemini_generate(question, contexts)
+        try:
+            return self._gemini_generate(question, contexts)
+        except Exception as e:
+            logger.error(f"Generation failed: {e}")
+            return "حدث خطأ أثناء توليد الإجابة."

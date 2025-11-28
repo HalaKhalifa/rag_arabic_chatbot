@@ -3,6 +3,7 @@ from .embeddings import TextEmbedder
 from .retriever import Retriever
 from .generator import Generator
 from .config import RAGSettings
+from .logger import logger
 
 class RagPipeline:
     """
@@ -19,12 +20,21 @@ class RagPipeline:
         generator: Optional[Generator] = None,
         top_k: Optional[int] = None,
     ):
-        self.embedder = embedder or TextEmbedder(RAGSettings.emb_model)
-        self.retriever = retriever
-        self.generator = generator or Generator(RAGSettings.gen_model)
-        self.top_k = top_k or RAGSettings.top_k
-        if self.retriever is None:
-            raise ValueError("Retriever must be provided to RagPipeline.")
+        try:
+            self.embedder = embedder or TextEmbedder(RAGSettings.emb_model)
+            self.retriever = retriever
+            self.generator = generator or Generator(RAGSettings.gen_model)
+            self.top_k = top_k or RAGSettings.top_k
+            if self.retriever is None:
+                raise ValueError("Retriever must be provided to RagPipeline.")
+            logger.info(
+                f"RagPipeline initialized (top_k={self.top_k}, "
+                f"embedder={self.embedder.model_name}, "
+                f"generator={self.generator.model_name})"
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize RagPipeline: {e}")
+            raise
 
     def answer(self, question: str) -> Dict[str, Any]:
         """
@@ -33,26 +43,33 @@ class RagPipeline:
         2. Generate answer from Gemini
         3. Return both answer + contexts
         """
+        try:
+            # Retrieve
+            contexts = self.retriever.retrieve(question)
+            context_texts = []
+            for c in contexts:
+                txt = (
+                    c.get("chunk")
+                    or c.get("context_text")
+                    or c.get("raw_context")
+                    or None
+                )
+                if txt:
+                    trimmed = txt[:350]
+                    context_texts.append(trimmed)
 
-        # Retrieve
-        contexts = self.retriever.retrieve(question)
-        context_texts = []
-        for c in contexts:
-            txt = (
-                c.get("chunk")
-                or c.get("context_text")
-                or c.get("raw_context")
-                or None
-            )
-            if txt:
-                trimmed = txt[:350]
-                context_texts.append(trimmed)
+            # Generate
+            answer = self.generator.generate(question, contexts=context_texts)
 
-        # Generate
-        answer = self.generator.generate(question, contexts=context_texts)
-
-        return {
-            "question": question,
-            "answer": answer,
-            "retrieved_contexts": contexts,
-        }
+            return {
+                "question": question,
+                "answer": answer,
+                "retrieved_contexts": contexts,
+            }
+        except Exception as e:
+            logger.error(f"RAG pipeline failed for question '{question}': {e}")
+            return {
+                "question": question,
+                "answer": "حدث خطأ أثناء توليد الإجابة.",
+                "retrieved_contexts": [],
+            }
