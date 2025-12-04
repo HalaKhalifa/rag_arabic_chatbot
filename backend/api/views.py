@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from ragchat.config import RAGSettings
 from ragchat.logger import logger
 import json
+from .services.rag_service import ingest_text_to_qdrant
 
 try:
     embedder = TextEmbedder(RAGSettings.emb_model)
@@ -74,8 +75,8 @@ def ingest(request):
         if not text:
             return JsonResponse({"error": "Text is required"}, status=400)
 
-        # TODO: integrate final ingestion logic
-        return JsonResponse({"status": "ingestion not implemented yet, will be done later"})
+        result = ingest_text_to_qdrant(text)
+        return JsonResponse(result, status=200)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
