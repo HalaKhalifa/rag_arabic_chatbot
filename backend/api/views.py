@@ -12,6 +12,7 @@ from ragchat.config import RAGSettings
 from ragchat.logger import logger
 import json
 from .services.rag_service import ingest_text_to_qdrant
+from .services.eval_service import evaluate_prediction
 
 try:
     embedder = TextEmbedder(RAGSettings.emb_model)
@@ -77,6 +78,47 @@ def ingest(request):
 
         result = ingest_text_to_qdrant(text)
         return JsonResponse(result, status=200)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+@csrf_exempt
+def evaluate(request):
+    auth = require_api_key(request)
+    if auth:
+        return auth
+
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        question = data.get("question")
+        expected = data.get("expected_answer")
+
+        if not question or not expected:
+            return JsonResponse(
+                {"error": "Fields 'question' and 'expected_answer' are required."},
+                status=400
+            )
+
+        if not pipeline:
+            return JsonResponse({"error": "Pipeline not initialized"}, status=500)
+
+        # run the RAG pipeline
+        result = pipeline.answer(question)
+        generated_answer = result.get("answer")
+
+        # evaluate prediction
+        scores = evaluate_prediction(expected, generated_answer)
+
+        return JsonResponse({
+            "question": question,
+            "expected_answer": expected,
+            "generated_answer": generated_answer,
+            "bleu": scores["bleu"],
+            "f1": scores["f1"]
+        })
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
