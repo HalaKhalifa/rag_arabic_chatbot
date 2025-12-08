@@ -3,9 +3,9 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from ragchat.config import RAGSettings
 from ragchat.logger import logger
-
+from typing import Optional
 class QdrantIndex:
-    def __init__(self, url: str = None, api_key: str | None = None, timeout: float = 20.0):
+    def __init__(self, url: str = None, api_key: Optional[str] = None, timeout: float = 20.0):
         """
         Simple wrapper around QdrantClient for collection management,
         upsert, and search.
@@ -73,7 +73,7 @@ class QdrantIndex:
             for offset, (v, payload) in enumerate(zip(vectors, payloads)):
                 points.append(
                     models.PointStruct(
-                        id=start_id + offset,
+                        id=payload.get("id"),
                         vector=self._to_vector(v),
                         payload=payload,
                     )
@@ -81,7 +81,7 @@ class QdrantIndex:
 
             self.client.upsert(collection_name=name, points=points, wait=True)
 
-            logger.info(f"Upserted {len(points)} points into '{name}' (IDs {start_id}–{start_id + len(points) - 1})")
+            logger.info(f"Upserted {len(points)} points into '{name}' (hash IDs)")
 
         except Exception as e:
             logger.error(f"Failed to upsert points to collection '{name}': {e}")
