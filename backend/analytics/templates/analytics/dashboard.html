@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RAG Analytics Dashboard</title>
+
+    <!-- Bootstrap -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    >
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .metric-card {
+            min-height: 120px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1 class="mb-4">📊 RAG Chatbot Analytics</h1>
+
+    <!-- ================= FILTERS ================= -->
+    <div class="card p-3 mb-4">
+        <h5>Filters</h5>
+
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input id="filter-start" type="date" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input id="filter-end" type="date" class="form-control">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Channel</label>
+                <select id="filter-channel" class="form-control">
+                    <option value="">All</option>
+                    <option value="api">API</option>
+                    <option value="cli">CLI</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Success</label>
+                <select id="filter-success" class="form-control">
+                    <option value="">All</option>
+                    <option value="true">Success only</option>
+                    <option value="false">Failed only</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary mt-3" onclick="applyFilters()">
+            Apply Filters
+        </button>
+    </div>
+    <!-- ================= EXPORT BUTTONS ================= -->
+    <div class="d-flex gap-2 mb-4">
+        <button class="btn btn-outline-secondary" onclick="exportData('json')">
+            📄 Export JSON
+        </button>
+
+        <button class="btn btn-outline-success" onclick="exportData('csv')">
+            📊 Export CSV
+        </button>
+    </div>
+    <!-- ================= SUMMARY CARDS ================= -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card metric-card text-center p-3">
+                <h4 id="total-events">--</h4>
+                <p>Total Events</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card metric-card text-center p-3">
+                <h4 id="success-rate">--%</h4>
+                <p>Success Rate</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card metric-card text-center p-3">
+                <h4 id="avg-latency">-- ms</h4>
+                <p>Average Latency</p>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card metric-card text-center p-3">
+                <h4 id="avg-score">--</h4>
+                <p>Average Score</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= CHARTS ================= -->
+    <div class="row">
+        <div class="col-md-6">
+            <h5>📈 Questions Per Day</h5>
+            <canvas id="daily-chart"></canvas>
+        </div>
+
+        <div class="col-md-6">
+            <h5>📊 Top Questions</h5>
+            <canvas id="top-questions-chart"></canvas>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <h5>🟢 Success vs Failure</h5>
+            <canvas id="success-chart"></canvas>
+        </div>
+        <div class ="col-md-6">
+            <div class="row-md-6">
+                <h5>⏱️ Latency Distribution</h5>
+                <canvas id="latency-chart"></canvas>
+            </div>    
+            <div class="row-md-6">
+                <h5>🏷️ Popular Topics</h5>
+                <canvas id="topics-chart"></canvas>
+            </div>
+        </div>    
+    </div>
+    
+    
+</div>
+
+<script>
+/* ---------------- Helpers ---------------- */
+function buildQueryParams() {
+    const params = [];
+    const start = document.getElementById("filter-start").value;
+    const end = document.getElementById("filter-end").value;
+    const channel = document.getElementById("filter-channel").value;
+    const success = document.getElementById("filter-success").value;
+
+    if (start) params.push(`start=${start}`);
+    if (end) params.push(`end=${end}`);
+    if (channel) params.push(`channel=${channel}`);
+    if (success) params.push(`success=${success}`);
+
+    return params.length ? "?" + params.join("&") : "";
+}
+
+function exportData(format) {
+    const query = buildQueryParams();
+    const url = `/analytics/export/?format=${format}${query ? "&" + query.slice(1) : ""}`;
+
+    if (format === "json") {
+        window.open(url, "_blank");
+    } else if (format === "csv") {
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const blob = new Blob([data.data], { type: "text/csv" });
+                const link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blob);
+                link.download = "analytics_export.csv";
+                link.click();
+            });
+    }
+}
+function bucketLatency(values) {
+    const buckets = {
+        "<500ms": 0,
+        "500–1000ms": 0,
+        "1–2s": 0,
+        ">2s": 0
+    };
+
+    values.forEach(v => {
+        if (v < 500) buckets["<500ms"]++;
+        else if (v < 1000) buckets["500–1000ms"]++;
+        else if (v < 2000) buckets["1–2s"]++;
+        else buckets[">2s"]++;
+    });
+
+    return buckets;
+}
+function extractKeywords(questions) {
+    const stopwords = ["ما", "هو", "هي", "في", "من", "على", "عن", "؟","أين","كيف"];
+    const freq = {};
+
+    questions.forEach(q => {
+        q.split(" ").forEach(word => {
+            if (word.length < 3 || stopwords.includes(word)) return;
+            freq[word] = (freq[word] || 0) + 1;
+        });
+    });
+
+    return Object.entries(freq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+}
+
+/* ---------------- API Calls ---------------- */
+async function fetchSummary() {
+    const res = await fetch("/analytics/summary/" + buildQueryParams());
+    return res.json();
+}
+
+async function fetchDaily() {
+    const res = await fetch("/analytics/daily/" + buildQueryParams());
+    return res.json();
+}
+
+async function fetchTopQuestions() {
+    const res = await fetch("/analytics/top-questions/" + buildQueryParams());
+    return res.json();
+}
+
+/* ---------------- Charts ---------------- */
+let dailyChart = null;
+let topQuestionsChart = null;
+let successChart = null;
+let latencyChart = null;
+let topicsChart = null;
+
+async function applyFilters() {
+    const summary = await fetchSummary();
+
+    document.getElementById("total-events").innerText = summary.total_events;
+    document.getElementById("success-rate").innerText =
+        (summary.success_rate * 100).toFixed(1) + "%";
+    document.getElementById("avg-latency").innerText =
+        summary.avg_latency_ms.toFixed(0) + " ms";
+    document.getElementById("avg-score").innerText =
+        summary.avg_top_score.toFixed(2);
+
+    /* q per day */
+
+    const daily = await fetchDaily();
+    if (dailyChart) dailyChart.destroy();
+
+    dailyChart = new Chart(document.getElementById("daily-chart"), {
+        type: "line",
+        data: {
+            labels: daily.results.map(x => x.day),
+            datasets: [{
+                label: "Questions",
+                data: daily.results.map(x => x.total),
+                borderColor: "#0d6efd",
+                fill: false
+            }]
+        }
+    });
+    /* top-questions */
+
+    const top = await fetchTopQuestions();
+    if (topQuestionsChart) topQuestionsChart.destroy();
+
+    topQuestionsChart = new Chart(document.getElementById("top-questions-chart"), {
+        type: "bar",
+        data: {
+            labels: top.results.map(x => x.question),
+            datasets: [{
+                label: "Count",
+                data: top.results.map(x => x.count),
+                backgroundColor: "#fd7e14"
+            }]
+        }
+    });
+    /* success */
+
+    if (successChart) successChart.destroy();
+
+    successChart = new Chart(document.getElementById("success-chart"), {
+        type: "doughnut",
+        data: {
+            labels: ["Success", "Failed"],
+            datasets: [{
+                data: [summary.successful, summary.failed],
+                backgroundColor: ["#198754", "#dc3545"]
+            }]
+        }
+    });
+    
+    /* latency */
+    const exportDataRes = await fetch("/analytics/export/?format=json" + buildQueryParams());
+    const exportJson = await exportDataRes.json();
+    const latencies = exportJson.results.map(x => x.latency_ms || 0);
+
+    const latencyBuckets = bucketLatency(latencies);
+
+    if (latencyChart) latencyChart.destroy();
+
+    latencyChart = new Chart(document.getElementById("latency-chart"), {
+        type: "bar",
+        data: {
+            labels: Object.keys(latencyBuckets),
+            datasets: [{
+                label: "Requests",
+                data: Object.values(latencyBuckets),
+                backgroundColor: "#0dcaf0"
+            }]
+        }
+    });
+
+    /* topics */
+
+    const questions = exportJson.results.map(x => x.question || "");
+    const keywords = extractKeywords(questions);
+
+    if (topicsChart) topicsChart.destroy();
+
+    topicsChart = new Chart(document.getElementById("topics-chart"), {
+        type: "bar",
+        data: {
+            labels: keywords.map(k => k[0]),
+            datasets: [{
+                label: "Frequency",
+                data: keywords.map(k => k[1]),
+                backgroundColor: "#6f42c1"
+            }]
+        }
+    });
+
+
+}
+
+/* Initial load */
+applyFilters();
+</script>
+
+</body>
+</html>

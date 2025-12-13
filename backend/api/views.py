@@ -1,5 +1,6 @@
 from django.shortcuts import render
-
+import time
+from analytics.services import log_chat_event
 from django.http import JsonResponse
 from django.conf import settings
 from ragchat.core.pipeline import RagPipeline
@@ -53,10 +54,57 @@ def ask(request):
         if not pipeline:
             return JsonResponse({"error": "Pipeline not initialized"}, status=500)
 
+        # measure latency
+        start_ms = int(time.time() * 1000)
         result = pipeline.answer(question)
+        end_ms = int(time.time() * 1000)
+        latency_ms = end_ms - start_ms
+        answer = result.get("answer", "")
+        contexts = result.get("retrieved_contexts", []) or []
+
+        # compute top_score from retrieval
+        top_score = None
+        if contexts:
+            try:
+                top_score = max(
+                    float(c.get("score") or 0.0)
+                    for c in contexts
+                    if isinstance(c, dict)
+                )
+            except Exception:
+                top_score = None
+
+        # consider our Arabic fallback message as failure
+        success = True
+        error_type = None
+        if answer.strip() == "حدث خطأ أثناء توليد الإجابة." or answer.strip() == "حدث خطأ أثناء الاتصال بنموذج Gemini." :
+            success = False
+            error_type = "generation_error"
+        elif answer.strip() == "لا أجد إجابة واضحة في النص.":
+            success = False
+            error_type = "context_missing"
+        
+        try:
+            log_chat_event(
+                channel="api",
+                question=question,
+                answer=answer,
+                latency_ms=latency_ms,
+                top_score=top_score,
+                num_contexts=len(contexts),
+                success=success,
+                error_type=error_type,
+                metadata={
+                    "retrieved_contexts_count": len(contexts),
+                },
+            )
+        except Exception as log_exc:
+            logger.warning(f"Failed to log analytics event: {log_exc}")
+
         return JsonResponse(result, safe=False)
 
     except Exception as e:
+        logger.error(f"RAG answer endpoint failed: {e}")
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
