@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-chat-dots fs-1 text-primary"></i>
+                <h4 class="mt-3">Chat</h4>
+                <p class="text-muted">Ask questions and interact with the RAG system.</p>
+                <a href="/chat/" class="btn btn-primary">Open Chat</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-database fs-1 text-success"></i>
+                <h4 class="mt-3">Ingest</h4>
+                <p class="text-muted">Upload or ingest new documents into the system.</p>
+                <a href="/ingest/" class="btn btn-success">Go to Ingest</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-bar-chart fs-1 text-dark"></i>
+                <h4 class="mt-3">Analytics</h4>
+                <p class="text-muted">View usage, performance, and topic analytics.</p>
+                <a href="/analytics/" class="btn btn-dark">View Analytics</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

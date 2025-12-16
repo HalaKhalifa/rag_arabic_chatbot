@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h3 class="mb-3">💬 Arabic RAG Chat</h3>
+
+        <p class="text-muted">
+            اكتب سؤالك باللغة العربية وسيقوم النظام بالإجابة اعتمادًا على قاعدة المعرفة.
+        </p>
+
+        <!-- Question input -->
+        <div class="mb-3">
+            <label class="form-label">سؤالك</label>
+            <textarea
+                id="question"
+                class="form-control"
+                rows="3"
+                placeholder="اكتب سؤالك هنا..."
+            ></textarea>
+        </div>
+
+        <button id="ask-btn" class="btn btn-primary">
+            اسأل
+        </button>
+        
+        <div class="mt-4">
+            <h5>الإجابة</h5>
+            <div id="answer-box" class="border rounded p-3 bg-light text-muted">
+                لم يتم إرسال أي سؤال بعد
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    const askBtn = document.getElementById("ask-btn");
+    const questionInput = document.getElementById("question");
+    const answerBox = document.getElementById("answer-box");
+    
+    askBtn.addEventListener("click", async () => {
+        const question = questionInput.value.trim();
+    
+        if (!question) {
+            answerBox.innerHTML = "الرجاء كتابة سؤال باللغة العربية";
+            return;
+        }
+    
+        askBtn.disabled = true;
+        answerBox.classList.remove("text-muted");
+        answerBox.innerHTML = " جارٍ البحث عن الإجابة...";
+    
+        try {
+            const res = await fetch("/api/ask/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-API-KEY": "yafahala2810khkh"
+                },
+                body: JSON.stringify({
+                    question: question
+                })
+            });
+    
+            const data = await res.json();
+    
+            if (!res.ok) {
+                throw new Error(data.error || "فشل في الإجابة");
+            }
+    
+            answerBox.innerHTML = data.answer || "⚠️ لم يتم إرجاع إجابة";
+    
+        } catch (err) {
+            answerBox.innerHTML = err.message;
+        } finally {
+            askBtn.disabled = false;
+        }
+    });
+    </script>
+    {% endblock %}
+    

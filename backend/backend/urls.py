@@ -16,8 +16,21 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import render
+
+def home(request):
+    return render(request, "home.html")
+
+def chat_page(request):
+    return render(request, "api/chat.html")
+
+def ingest_page(request):
+    return render(request, "api/ingest.html")
 
 urlpatterns = [
+    path("", home),
+    path("chat/", chat_page),
+    path("ingest/", ingest_page),
     path("api/", include("api.urls")),
     path("analytics/", include("analytics.urls"))
 ,
