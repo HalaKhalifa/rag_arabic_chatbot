@@ -1,84 +1,704 @@
 {% extends "base.html" %}
 
-{% block title %}Chat{% endblock %}
+{% block title %}محادثة Bousola AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Arabic-focused styles */
+    .chat-container {
+        direction: rtl;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Chat Card */
+    .chat-card {
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        box-shadow: 0 8px 24px var(--shadow-color);
+        overflow: hidden;
+    }
+
+    .chat-header {
+        background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-800) 100%);
+        color: white;
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .chat-header h3 {
+        margin: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .chat-header .arabic-badge {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    /* Question Input */
+    .question-input-container {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .question-input {
+        min-height: 80px;
+        max-height: 120px;
+        border: 2px solid var(--neutral-300);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        transition: all 0.3s ease;
+        background: var(--neutral-100);
+        resize: vertical;
+        text-align: right;
+    }
+
+    .question-input:focus {
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 0.25rem rgba(64, 145, 108, 0.15);
+        background: white;
+    }
+
+    .question-input::placeholder {
+        color: var(--neutral-500);
+        opacity: 0.7;
+    }
+
+    .input-label {
+        font-weight: 600;
+        color: var(--primary-700);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .char-counter {
+        position: absolute;
+        left: 1rem;
+        bottom: 0.75rem;
+        font-size: 0.85rem;
+        color: var(--neutral-600);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    /* Ask Button */
+    .ask-button {
+        background: linear-gradient(to left, var(--primary-600), var(--primary-700));
+        border: none;
+        padding: 0.75rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-right: auto;
+        margin-left: auto;
+        min-width: 180px;
+        justify-content: center;
+    }
+
+    .ask-button:hover {
+        background: linear-gradient(to left, var(--primary-700), var(--primary-800));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(64, 145, 108, 0.25);
+    }
+
+    .ask-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .ask-button .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Answer Section */
+    .answer-section {
+        margin-top: 2rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+    }
+
+    .answer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .answer-header h5 {
+        margin: 0;
+        color: var(--primary-700);
+        font-weight: 700;
+    }
+
+    .answer-box {
+        background: linear-gradient(135deg, var(--neutral-100) 0%, var(--neutral-50) 100%);
+        border: 2px solid var(--primary-100);
+        border-radius: 12px;
+        padding: 1.5rem;
+        min-height: 180px;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        text-align: right;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .answer-box.loading {
+        background: linear-gradient(135deg, var(--neutral-100) 0%, var(--neutral-100) 100%);
+        border-color: var(--neutral-300);
+    }
+
+    .answer-box.empty {
+        color: var(--neutral-500);
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .answer-content {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        text-align: right;
+        direction: rtl;
+    }
+
+    /* Source Documents (if available) */
+    .sources-section {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: var(--primary-50);
+        border-radius: 10px;
+        border: 1px solid var(--primary-100);
+    }
+
+    .sources-section h6 {
+        color: var(--primary-700);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .source-item {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--neutral-700);
+    }
+
+    .source-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .source-score {
+        display: inline-block;
+        background: var(--primary-100);
+        color: var(--primary-700);
+        padding: 0.15rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+        font-weight: 500;
+    }
+
+    /* History Panel */
+    .history-panel {
+        background: var(--neutral-100);
+        border-radius: 12px;
+        padding: 1rem;
+        height: 100%;
+    }
+
+    .history-title {
+        color: var(--primary-700);
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .history-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 1rem 0;
+    }
+
+    .history-item {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .history-item:hover {
+        border-color: var(--primary-300);
+        transform: translateX(-5px);
+    }
+
+    .history-question {
+        font-weight: 500;
+        color: var(--primary-800);
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .history-date {
+        font-size: 0.75rem;
+        color: var(--neutral-600);
+    }
+    
+    .btn-outline-black {
+        color: #212529;
+        border-color: #212529;
+        background: transparent;
+    }
+
+    .btn-outline-black:hover {
+        color: white;
+        background-color: #212529;
+        border-color: #212529;
+    }
+    
+    /* Clear History Button in Sidebar */
+    .clear-history-btn {
+        width: 100%;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    /* History Count Badge */
+    .history-count {
+        background: var(--primary-100);
+        color: var(--primary-700);
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .chat-header h3 {
+            font-size: 1.5rem;
+        }
+        
+        .question-input {
+            min-height: 70px;
+            font-size: 1rem;
+        }
+        
+        .answer-box {
+            min-height: 120px;
+            padding: 1rem;
+        }
+        
+        .ask-button {
+            width: 100%;
+        }
+    }
+
+    /* Arabic Typography Enhancements */
+    .arabic-text {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        text-align: right;
+        font-family: 'Segoe UI', 'Arial', sans-serif;
+    }
+
+    /* Instructions */
+    .instructions {
+        background: linear-gradient(135deg, var(--accent-50) 0%, var(--accent-100) 100%);
+        border: 1px solid var(--accent-200);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .instructions h6 {
+        color: var(--accent-700);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .instructions ul {
+        margin: 0;
+        padding-right: 1.25rem;
+        color: var(--accent-800);
+    }
+
+    .instructions li {
+        margin-bottom: 0.25rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h3 class="mb-3">💬 Arabic RAG Chat</h3>
-
-        <p class="text-muted">
-            اكتب سؤالك باللغة العربية وسيقوم النظام بالإجابة اعتمادًا على قاعدة المعرفة.
-        </p>
-
-        <!-- Question input -->
-        <div class="mb-3">
-            <label class="form-label">سؤالك</label>
-            <textarea
-                id="question"
-                class="form-control"
-                rows="3"
-                placeholder="اكتب سؤالك هنا..."
-            ></textarea>
+<div class="chat-container">
+    <div class="chat-card">
+        <!-- Header -->
+        <div class="chat-header">
+            <h3>
+                <i class="bi bi-chat-left-text-fill"></i>
+                محادثة Bousola AI
+                <span class="arabic-badge">
+                    <i class="bi bi-translate"></i>
+                    مدعوم باللغة العربية
+                </span>
+            </h3>
+            <p class="mt-2 mb-0" style="opacity: 0.9; font-size: 1rem;">
+                اكتب سؤالك باللغة العربية وسيقوم النظام بالإجابة اعتمادًا على قاعدة المعرفة المخصصة.
+            </p>
         </div>
 
-        <button id="ask-btn" class="btn btn-primary">
-            اسأل
-        </button>
-        
-        <div class="mt-4">
-            <h5>الإجابة</h5>
-            <div id="answer-box" class="border rounded p-3 bg-light text-muted">
-                لم يتم إرسال أي سؤال بعد
+        <div class="card-body p-4">
+            <div class="row">
+                <!-- Main Chat Area -->
+                <div class="col-lg-8">
+                    <!-- Instructions -->
+                    <div class="instructions mb-4">
+                        <h6><i class="bi bi-lightbulb"></i> نصائح للحصول على إجابات أفضل:</h6>
+                        <ul>
+                            <li>اكتب أسئلة واضحة ومحددة</li>
+                            <li>استخدم اللغة العربية الفصحى للحصول على نتائج أفضل</li>
+                            <li>يمكنك سؤال النظام عن أي موضوع متوفر في قاعدة المعرفة</li>
+                            <li>إذا لم تحصل على إجابة كافية، حاول صياغة السؤال بطريقة مختلفة</li>
+                        </ul>
+                    </div>
+
+                    <!-- Question Input -->
+                    <div class="question-input-container">
+                        <label class="input-label">
+                            <i class="bi bi-question-circle"></i>
+                            اكتب سؤالك هنا:
+                        </label>
+                        <textarea 
+                            id="question" 
+                            class="form-control question-input arabic-text" 
+                            rows="2"
+                            placeholder="مثال: من هو صلاح الدين الايوبي؟"
+                            maxlength="1000"
+                        ></textarea>
+                        <div class="char-counter">
+                            <span id="char-count">0</span>/1000 حرف
+                        </div>
+                    </div>
+
+                    <!-- Ask Button -->
+                    <div class="text-center mt-4">
+                        <button id="ask-btn" class="btn ask-button">
+                            <i class="bi bi-send"></i>
+                            <span>إرسال السؤال</span>
+                        </button>
+                    </div>
+
+                    <!-- Answer Section -->
+                    <div class="answer-section">
+                        <div class="answer-header">
+                            <h5><i class="bi bi-chat-right-text"></i> الإجابة:</h5>
+                            <div class="answer-meta">
+                                <small class="text-muted" id="answer-time"></small>
+                            </div>
+                        </div>
+                        
+                        <div id="answer-box" class="answer-box empty">
+                            <div class="answer-content">
+                                لم يتم إرسال أي سؤال بعد. اكتب سؤالك أعلاه واضغط على زر "إرسال السؤال"
+                            </div>
+                        </div>
+
+                        <!-- Source Documents (Hidden by default) -->
+                        <div id="sources-section" class="sources-section d-none">
+                            <h6><i class="bi bi-file-text"></i> المصادر المستخدمة:</h6>
+                            <div id="sources-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Sidebar -->
+                <div class="col-lg-4 mt-4 mt-lg-0">
+                    <div class="history-panel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="history-title mb-0">
+                                <i class="bi bi-clock-history"></i>
+                                الأسئلة السابقة
+                            </h6>
+                            <span id="history-count" class="history-count">0</span>
+                        </div>
+                        
+                        <div id="history-empty" class="text-center text-muted py-3">
+                            <i class="bi bi-chat-left-dots display-6 mb-3"></i>
+                            <p>لا توجد أسئلة سابقة</p>
+                        </div>
+                        
+                        <ul id="history-list" class="history-list d-none">
+                            <!-- History items will be added here dynamically -->
+                        </ul>
+                        
+                        <!-- Clear History Button (will be added by JavaScript) -->
+                        <div id="clear-history-container"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-    const askBtn = document.getElementById("ask-btn");
-    const questionInput = document.getElementById("question");
-    const answerBox = document.getElementById("answer-box");
+document.addEventListener('DOMContentLoaded', function() {
+    const askBtn = document.getElementById('ask-btn');
+    const questionInput = document.getElementById('question');
+    const answerBox = document.getElementById('answer-box');
+    const answerContent = answerBox.querySelector('.answer-content');
+    const charCount = document.getElementById('char-count');
+    const answerTime = document.getElementById('answer-time');
+    const sourcesSection = document.getElementById('sources-section');
+    const sourcesList = document.getElementById('sources-list');
+    const historyList = document.getElementById('history-list');
+    const historyEmpty = document.getElementById('history-empty');
+    const historyCount = document.getElementById('history-count');
+    const clearHistoryContainer = document.getElementById('clear-history-container');
     
-    askBtn.addEventListener("click", async () => {
-        const question = questionInput.value.trim();
+    let chatHistory = JSON.parse(localStorage.getItem('bousola_chat_history') || '[]');
     
-        if (!question) {
-            answerBox.innerHTML = "الرجاء كتابة سؤال باللغة العربية";
+    // Update character counter
+    questionInput.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+    
+    // Load chat history and update UI
+    function loadChatHistory() {
+        // Update count
+        historyCount.textContent = chatHistory.length;
+        
+        if (chatHistory.length === 0) {
+            historyEmpty.classList.remove('d-none');
+            historyList.classList.add('d-none');
+            updateClearHistoryButton();
             return;
         }
+        
+        historyEmpty.classList.add('d-none');
+        historyList.classList.remove('d-none');
+        historyList.innerHTML = '';
+        
+        // Show last 5 questions
+        const recentHistory = chatHistory.slice(-5).reverse();
+        
+        recentHistory.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = `
+                <div class="history-question">${item.question.substring(0, 60)}${item.question.length > 60 ? '...' : ''}</div>
+                <div class="history-date">
+                    <i class="bi bi-calendar"></i> ${new Date(item.timestamp).toLocaleDateString('ar-EG')}
+                </div>
+            `;
+            
+            li.addEventListener('click', () => {
+                questionInput.value = item.question;
+                charCount.textContent = item.question.length;
+                answerBox.className = 'answer-box';
+                answerContent.innerHTML = item.answer;
+                answerTime.textContent = `آخر تحديث: ${new Date(item.timestamp).toLocaleString('ar-EG')}`;
+                answerBox.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            historyList.appendChild(li);
+        });
+        
+        updateClearHistoryButton();
+    }
     
+    // Update or create clear history button
+    function updateClearHistoryButton() {
+        clearHistoryContainer.innerHTML = '';
+        
+        if (chatHistory.length === 0) {
+            // Don't show button if no history
+            return;
+        }
+        
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'btn btn-sm btn-outline-black clear-history-btn';
+        clearBtn.innerHTML = '<i class="bi bi-trash me-1"></i> مسح سجل المحادثات';
+        clearBtn.onclick = clearChatHistory;
+        
+        clearHistoryContainer.appendChild(clearBtn);
+    }
+    
+    // Clear chat history
+    function clearChatHistory() {
+        if (chatHistory.length === 0) {
+            showToast('لا يوجد سجل محادثات للمسح', 'info');
+            return;
+        }
+        
+        if (confirm('هل أنت متأكد من رغبتك في مسح سجل المحادثات؟')) {
+            localStorage.removeItem('bousola_chat_history');
+            chatHistory = [];
+            loadChatHistory();
+            showToast('تم مسح سجل المحادثات', 'info');
+        }
+    }
+    
+    // Initialize
+    loadChatHistory();
+    
+    // Ask button handler
+    askBtn.addEventListener('click', async function() {
+        const question = questionInput.value.trim();
+        
+        if (!question) {
+            showToast('الرجاء كتابة سؤال قبل الإرسال', 'warning');
+            questionInput.focus();
+            return;
+        }
+        
+        // Disable button and show loading
         askBtn.disabled = true;
-        answerBox.classList.remove("text-muted");
-        answerBox.innerHTML = " جارٍ البحث عن الإجابة...";
-    
+        askBtn.innerHTML = '<div class="spinner"></div> جاري المعالجة...';
+        
+        // Update answer box
+        answerBox.className = 'answer-box loading';
+        answerContent.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">جارٍ البحث عن الإجابة...</p></div>';
+        answerTime.textContent = '';
+        sourcesSection.classList.add('d-none');
+        
         try {
-            const res = await fetch("/api/ask/", {
-                method: "POST",
+            const startTime = Date.now();
+            const res = await fetch('/api/ask/', {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-API-KEY": "yafahala2810khkh"
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': 'yafahala2810khkh',
+                    'Accept-Language': 'ar'
                 },
                 body: JSON.stringify({
                     question: question
                 })
             });
-    
+            
             const data = await res.json();
-    
+            const elapsedTime = Date.now() - startTime;
+            
             if (!res.ok) {
-                throw new Error(data.error || "فشل في الإجابة");
+                throw new Error(data.error || 'حدث خطأ في الخادم');
             }
-    
-            answerBox.innerHTML = data.answer || "⚠️ لم يتم إرجاع إجابة";
-    
+            
+            // Update answer box
+            answerBox.className = 'answer-box';
+            answerContent.innerHTML = data.answer || 'لم يتم إرجاع إجابة';
+            answerTime.textContent = `تمت المعالجة في ${elapsedTime} مللي ثانية`;
+            
+            // Show sources if available
+            if (data.sources && data.sources.length > 0) {
+                sourcesSection.classList.remove('d-none');
+                sourcesList.innerHTML = '';
+                
+                data.sources.forEach((source, index) => {
+                    const sourceDiv = document.createElement('div');
+                    sourceDiv.className = 'source-item';
+                    sourceDiv.innerHTML = `
+                        <span class="source-score">${source.score ? Math.round(source.score * 100) + '%' : 'مصدر'}</span>
+                        ${source.content ? source.content.substring(0, 150) + (source.content.length > 150 ? '...' : '') : 'مصدر غير معروف'}
+                    `;
+                    sourcesList.appendChild(sourceDiv);
+                });
+            }
+            
+            // Add to chat history
+            const chatItem = {
+                question: question,
+                answer: data.answer || '',
+                timestamp: new Date().toISOString(),
+                sources: data.sources || []
+            };
+            
+            chatHistory.push(chatItem);
+            if (chatHistory.length > 20) {
+                chatHistory = chatHistory.slice(-20); // Keep last 20 items
+            }
+            
+            localStorage.setItem('bousola_chat_history', JSON.stringify(chatHistory));
+            loadChatHistory();
+            
+            showToast('تم استلام الإجابة بنجاح', 'success');
+            
         } catch (err) {
-            answerBox.innerHTML = err.message;
+            console.error('Error:', err);
+            answerBox.className = 'answer-box';
+            answerContent.innerHTML = `<div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>خطأ:</strong> ${err.message}
+            </div>`;
+            showToast('حدث خطأ في الحصول على الإجابة', 'error');
+            
         } finally {
+            // Re-enable button
             askBtn.disabled = false;
+            askBtn.innerHTML = '<i class="bi bi-send"></i> <span>إرسال السؤال</span>';
         }
     });
-    </script>
-    {% endblock %}
     
+    // Enter key support (Ctrl+Enter to submit)
+    questionInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            askBtn.click();
+        }
+    });
+    
+    // Copy answer button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn btn-sm btn-outline-primary me-2';
+    copyBtn.innerHTML = '<i class="bi bi-copy"></i> نسخ الإجابة';
+    copyBtn.onclick = function() {
+        const text = answerContent.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('تم نسخ الإجابة إلى الحافظة', 'success');
+        });
+    };
+    document.querySelector('.answer-header').appendChild(copyBtn);
+});
+</script>
+{% endblock %}
