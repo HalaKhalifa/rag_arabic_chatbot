@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}محادثة Bousola AI{% endblock %}
+{% block title %}محادثة Bosala AI{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -377,7 +377,7 @@
         <div class="chat-header">
             <h3>
                 <i class="bi bi-chat-left-text-fill"></i>
-                محادثة Bousola AI
+                محادثة Bosala AI
                 <span class="arabic-badge">
                     <i class="bi bi-translate"></i>
                     مدعوم باللغة العربية
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const historyCount = document.getElementById('history-count');
     const clearHistoryContainer = document.getElementById('clear-history-container');
     
-    let chatHistory = JSON.parse(localStorage.getItem('bousola_chat_history') || '[]');
+    let chatHistory = JSON.parse(localStorage.getItem('bosala_chat_history') || '[]');
     
     // Update character counter
     questionInput.addEventListener('input', function() {
@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (confirm('هل أنت متأكد من رغبتك في مسح سجل المحادثات؟')) {
-            localStorage.removeItem('bousola_chat_history');
+            localStorage.removeItem('bosala_chat_history');
             chatHistory = [];
             loadChatHistory();
             showToast('تم مسح سجل المحادثات', 'info');
@@ -610,7 +610,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-API-KEY': 'yafahala2810khkh',
                     'Accept-Language': 'ar'
                 },
                 body: JSON.stringify({
@@ -659,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 chatHistory = chatHistory.slice(-20); // Keep last 20 items
             }
             
-            localStorage.setItem('bousola_chat_history', JSON.stringify(chatHistory));
+            localStorage.setItem('bosala_chat_history', JSON.stringify(chatHistory));
             loadChatHistory();
             
             showToast('تم استلام الإجابة بنجاح', 'success');

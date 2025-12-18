@@ -2,13 +2,13 @@ from django.shortcuts import render
 import time
 from analytics.services import log_chat_event
 from django.http import JsonResponse
-from django.conf import settings
 from ragchat.core.pipeline import RagPipeline
 from ragchat.core.embeddings import TextEmbedder
 from ragchat.core.retriever import Retriever
 from ragchat.core.generator import Generator
 from ragchat.storage.qdrant_index import QdrantIndex
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.admin.views.decorators import staff_member_required
 from ragchat.config import RAGSettings
 from ragchat.logger import logger
 import json
@@ -25,22 +25,11 @@ except Exception as e:
     pipeline = None
     logger.error(f"Failed to initialize RAG pipeline: {e}")
 
-def require_api_key(request):
-    token = request.headers.get("X-API-KEY")
-    if not token or token != getattr(settings, "API_SECRET", None):
-        return JsonResponse({"error": "Unauthorized"}, status=401)
-    return None
-
 def health_check(request):
     return JsonResponse({"status": "ok"})
 
 @csrf_exempt
 def ask(request):
-    # Auth
-    auth = require_api_key(request)
-    if auth: 
-        return auth
-
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
@@ -108,12 +97,8 @@ def ask(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
+@staff_member_required
 def ingest(request):
-    # Auth
-    auth = require_api_key(request)
-    if auth: 
-        return auth
-
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
@@ -132,10 +117,6 @@ def ingest(request):
 
 @csrf_exempt
 def evaluate(request):
-    auth = require_api_key(request)
-    if auth:
-        return auth
-
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
@@ -170,3 +151,18 @@ def evaluate(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def chat_page(request):
+    """
+    Public chat page (end users)
+    """
+    return render(request, "api/chat.html")
+
+
+@staff_member_required
+def ingest_page(request):
+    """
+    Admin-only ingest page
+    """
+    return render(request, "api/ingest.html")

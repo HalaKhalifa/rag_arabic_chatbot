@@ -7,8 +7,9 @@ from django.utils import timezone
 from django.db.models import Count, Avg, Q
 from django.db.models.functions import TruncDate
 from .models import ChatEvent
-from api.views import require_api_key, logger
+from ragchat.logger import logger
 from django.shortcuts import render
+from django.contrib.admin.views.decorators import staff_member_required
 
 def _filter_events(request):
     """
@@ -43,11 +44,8 @@ def _filter_events(request):
     return qs
 
 @csrf_exempt
+@staff_member_required
 def analytics_log(request):
-    auth = require_api_key(request)
-    if auth:
-        return auth
-
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
@@ -96,6 +94,7 @@ def analytics_log(request):
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 @csrf_exempt
+@staff_member_required
 def analytics_summary(request):
     if request.method != "GET":
         return JsonResponse({"error": "GET required"}, status=405)
@@ -130,6 +129,7 @@ def analytics_summary(request):
     return JsonResponse(data)
 
 @csrf_exempt
+@staff_member_required
 def analytics_daily(request):
     if request.method != "GET":
         return JsonResponse({"error": "GET required"}, status=405)
@@ -156,6 +156,7 @@ def analytics_daily(request):
     return JsonResponse({"results": response})
 
 @csrf_exempt
+@staff_member_required
 def analytics_top_questions(request):
     if request.method != "GET":
         return JsonResponse({"error": "GET required"}, status=405)
@@ -176,6 +177,7 @@ def analytics_top_questions(request):
     return JsonResponse({"results": list(top_qs)})
 
 @csrf_exempt
+@staff_member_required
 def analytics_export(request):
     if request.method != "GET":
         return JsonResponse({"error": "GET required"}, status=405)
@@ -212,5 +214,7 @@ def analytics_export(request):
     events = list(qs.values(*fields).order_by("-timestamp"))
     return JsonResponse({"format": "json", "results": events})
 
+@csrf_exempt
+@staff_member_required
 def analytics_dashboard(request):
     return render(request, "analytics/dashboard.html")

@@ -181,6 +181,54 @@
             font-size: 1.1rem;
         }
 
+        /* Auth Links Styling */
+        .auth-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-left: 1rem;
+            padding-left: 1rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .auth-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            text-decoration: none !important;
+            font-weight: 500;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .auth-link:hover {
+            color: white !important;
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .auth-link.admin {
+            color: #ffc107 !important;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .auth-link.admin:hover {
+            background-color: rgba(255, 193, 7, 0.15);
+            border-color: rgba(255, 193, 7, 0.5);
+        }
+
+        .auth-link.logout {
+            color: #f8d7da !important;
+            border: 1px solid rgba(248, 215, 218, 0.3);
+        }
+
+        .auth-link.logout:hover {
+            background-color: rgba(248, 215, 218, 0.15);
+            border-color: rgba(248, 215, 218, 0.5);
+        }
+
         /* Mobile Nav Toggle */
         .navbar-toggler {
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -287,14 +335,14 @@
             margin-top: 0.5rem;
         }
 
-
         /* Make sure text is visible */
         .text-muted {
             color: var(--neutral-600) !important;
         }
+        
         /* Ensure proper RTL for Arabic text in footer */
         .text-right[dir="rtl"] {
-            text-align: left !important; /* This ensures the text-align: right works correctly with RTL */
+            text-align: left !important;
         }
 
         /* For the entire footer RTL section */
@@ -315,6 +363,17 @@
             .container.main-content {
                 padding: 1.5rem 1rem;
             }
+            
+            .auth-links {
+                margin-left: 0;
+                padding-left: 0;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+                padding-top: 0.75rem;
+                margin-top: 0.75rem;
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         @media (max-width: 768px) {
@@ -333,6 +392,16 @@
             .page-header h1 {
                 font-size: 1.75rem;
             }
+            
+            .auth-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .auth-link {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         /* Mobile responsiveness for footer */
@@ -349,7 +418,6 @@
             .text-right[dir="rtl"] {
                 text-align: center !important;
             }
-
         }
 
         /* Animation for page transitions */
@@ -463,6 +531,8 @@
                         <span class="nav-text">Chat Interface</span>
                     </a>
                 </li>
+                
+                {% if user.is_staff %}
                 <li class="nav-item">
                     <a class="nav-link {% if '/ingest/' in request.path %}active{% endif %}" 
                        href="/ingest/">
@@ -477,7 +547,29 @@
                         <span class="nav-text">Analytics</span>
                     </a>
                 </li>
+                {% endif %}
             </ul>
+            
+            <!-- Authentication Links -->
+            <div class="auth-links">
+                {% if not user.is_authenticated %}
+                <a href="/admin/login/?next=/admin/" class="auth-link admin">
+                    <i class="bi bi-shield-lock"></i> Admin Login
+                </a>
+                {% endif %}
+                
+                {% if user.is_staff %}
+                <a href="/admin/" class="auth-link admin">
+                    <i class="bi bi-gear"></i> Admin Panel
+                </a>
+                {% endif %}
+                
+                {% if user.is_authenticated %}
+                <a href="/admin/logout/" class="auth-link logout">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
 </nav>
