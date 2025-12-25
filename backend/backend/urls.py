@@ -24,7 +24,7 @@ def home(request):
     return render(request, "home.html")
 
 urlpatterns = [
-    path("", home),
+    path("", home, name='home'),
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
     
@@ -36,7 +36,7 @@ urlpatterns = [
     path("login/", auth_views.LoginView.as_view(template_name="login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
 
-    path("analytics/", include("analytics.urls"))
-,
+    path("analytics/", include("analytics.urls")),
+    path('users/', include('users.urls')),
 
 ]

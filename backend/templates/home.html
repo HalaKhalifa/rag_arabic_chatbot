@@ -353,7 +353,70 @@
         font-size: 0.95rem;
         line-height: 1.5;
     }
+    /* User Info Box  */
 
+    .user-welcome {
+        background: linear-gradient(135deg, var(--primary-100) 0%, var(--accent-100) 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 2px solid var(--primary-200);
+    }
+
+    .user-welcome h4 {
+        color: var(--primary-800);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .user-welcome p {
+        color: var(--neutral-700);
+        line-height: 1.6;
+    }
+
+    .user-info {
+        background: linear-gradient(135deg, var(--accent-50) 0%, var(--primary-50) 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 2px solid var(--accent-200);
+    }
+
+    .user-info h4 {
+        color: var(--accent-800);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .user-info p {
+        color: var(--neutral-700);
+        line-height: 1.6;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .user-welcome,
+        .user-info,
+        .admin-info {
+            padding: 1.25rem;
+            text-align: center;
+        }
+        
+        .user-welcome .row,
+        .user-info .row {
+            flex-direction: column;
+        }
+        
+        .user-welcome .col-md-4,
+        .user-info .col-md-4 {
+            text-align: center !important;
+            margin-top: 1rem;
+        }
+    }
     /* Admin Info Box */
     .admin-info {
         background: linear-gradient(135deg, var(--neutral-100) 0%, var(--neutral-50) 100%);
@@ -562,7 +625,31 @@
         </div>
     </section>
 
-    <!-- Admin Information -->
+    {% if user.is_authenticated %}
+    <!-- Show user welcome for logged-in users -->
+    <div class="user-welcome fade-in-up delay-1">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4><i class="bi bi-person-check me-2"></i>مرحباً {{ user.username }}</h4>
+                <p class="mb-0">
+                    يمكنك الآن استخدام نظام المحادثة باللغة العربية. اسأل أي سؤال وسيحاول النظام الإجابة بناءً على قاعدة المعرفة المتاحة.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="/chat/" class="primary-btn">
+                    <i class="bi bi-chat-dots"></i> ابدأ المحادثة
+                </a>
+                {% if not user.is_staff %}
+                <a href="{% url 'users:profile' %}" class="outline-btn me-2">
+                    <i class="bi bi-person"></i> الملف الشخصي
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_authenticated and user.is_staff %}
+    <!-- show admin info for staff users -->
     <div class="admin-info fade-in-up delay-1">
         <h4><i class="bi bi-shield-lock"></i> معلومات للمشرفين</h4>
         <p>
@@ -578,7 +665,29 @@
             </a>
         </div>
     </div>
+    {% endif %}
 
+    {% else %}
+    <!-- Show user registration prompt for non-authenticated users -->
+    <div class="user-info fade-in-up delay-1">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4><i class="bi bi-person-plus me-2"></i>انضم إلى Bosala AI</h4>
+                <p class="mb-0">
+                    سجل الآن للحصول على تجربة محادثة كاملة. يمكنك تحديث ملفك الشخصي، تتبع محادثاتك، والمزيد.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'users:register' %}" class="primary-btn">
+                    <i class="bi bi-person-plus"></i> إنشاء حساب
+                </a>
+                <a href="{% url 'users:login' %}" class="outline-btn me-2">
+                    <i class="bi bi-box-arrow-in-right"></i> تسجيل الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <!-- Features Section -->
     <section id="features" class="features-section fade-in-up delay-2">
         <h2 class="section-title">مميزات النظام التجريبي</h2>
