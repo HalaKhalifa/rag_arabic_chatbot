@@ -1,7 +1,6 @@
 # backend/users/urls.py
 from django.urls import path
 from . import views
-from django.contrib.auth import views as auth_views
 
 app_name = 'users'
 
@@ -15,9 +14,7 @@ urlpatterns = [
     
     # Profile
     path('profile/', views.user_profile_view, name='profile'),
-        
-    # User list (for testing)
-    path('list/', views.user_list_view, name='list'),
-    
+    path('delete-account/', views.delete_account_view, name='delete_account'),
+       
     # Password reset ' later'
 ]

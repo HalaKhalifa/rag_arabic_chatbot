@@ -1,9 +1,8 @@
-# backend/users/forms.py
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from django.contrib.auth import password_validation
+from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
 from .models import User
+
 
 class UserRegistrationForm(UserCreationForm):
     """Form for user registration."""
@@ -36,31 +35,50 @@ class UserRegistrationForm(UserCreationForm):
             user.save()
         return user
 
-class UserProfileForm(UserChangeForm):
+
+class ProfileUpdateForm(forms.ModelForm):
     """Form for updating user profile."""
     
-    password = None  # Remove password field from profile form
+    email = forms.EmailField(
+        required=True,
+        label=_('Email'),
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('Enter your email')
+        })
+    )
+    
+    phone = forms.CharField(
+        required=False,
+        max_length=20,
+        label=_('Phone Number'),
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': _('+966500000000')
+        })
+    )
+    
+    bio = forms.CharField(
+        required=False,
+        label=_('Bio'),
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': _('Tell us about yourself...')
+        })
+    )
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'bio')
+        fields = ['first_name', 'last_name', 'email', 'phone', 'bio']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-        }
-        labels = {
-            'username': _('Username'),
-            'email': _('Email'),
-            'first_name': _('First Name'),
-            'last_name': _('Last Name'),
-            'phone': _('Phone Number'),
-            'bio': _('Bio/Description'),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].widget.attrs['readonly'] = True
+        # Set initial values
+        if self.instance:
+            self.fields['phone'].initial = self.instance.phone
+            self.fields['bio'].initial = self.instance.bio

@@ -219,7 +219,7 @@
                             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
                                 <i class="bi bi-trash me-2"></i>
                                 حذف الحساب
-                            </button>
+                            </button>                            
                         </div>
                     </div>
                 </div>
@@ -227,8 +227,8 @@
         </div>
     </div>
 </div>
-
-<!-- Delete Account Modal -->
+{% endblock %}
+{% block modals %}
 <div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -237,24 +237,39 @@
                     <i class="bi bi-exclamation-triangle text-danger me-2"></i>
                     تأكيد حذف الحساب
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>تحذير:</strong> سيتم حذف حسابك بشكل دائم. لا يمكن التراجع عن هذا الإجراء.
-                </p>
-                <p>هل أنت متأكد من رغبتك في حذف حسابك؟</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                <button type="button" class="btn btn-danger" disabled>حذف الحساب</button>
-            </div>
+            <form method="post" action="{% url 'users:delete_account' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>تحذير:</strong> سيتم حذف حسابك بشكل دائم. لا يمكن التراجع عن هذا الإجراء.
+                    </div>
+                    <p>هل أنت متأكد من رغبتك في حذف حسابك؟</p>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">أدخل كلمة المرور للتأكيد:</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="confirmPassword" 
+                               name="password" 
+                               required
+                               placeholder="أدخل كلمة المرور الحالية"
+                               autocomplete="current-password">
+                        <div class="form-text">يجب إدخال كلمة المرور الحالية لتأكيد عملية الحذف.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">
+                        حذف الحساب
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
-
 {% block extra_css %}
 <style>
     .profile-container {
@@ -542,15 +557,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Form validation
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            // Add validation logic here if needed
-        });
+    // Profile form (safe)
+    const profileForm = document.querySelector('.profile-form-card form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function() {});
     }
-    
-    // Auto-format phone number
+
+    // Phone formatting
     const phoneInput = document.getElementById('id_phone');
     if (phoneInput) {
         phoneInput.addEventListener('input', function(e) {
@@ -561,6 +574,78 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.value = value;
         });
     }
+
+    // Delete form handling
+    const deleteForm = document.querySelector('#deleteAccountModal form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const passwordInput = document.getElementById('confirmPassword');
+            const password = passwordInput ? passwordInput.value.trim() : '';
+            
+            if (!password) {
+                e.preventDefault();
+                alert('الرجاء إدخال كلمة المرور لتأكيد حذف الحساب.');
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+                return false;
+            }
+            
+            // Double confirmation
+            const confirmed = confirm('⚠️ تحذير نهائي!\n\nسيتم حذف حسابك بشكل كامل ولا يمكن استعادته.\nهل أنت متأكد تماماً من رغبتك في حذف حسابك؟');
+            
+            if (!confirmed) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state on the submit button
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الحذف...';
+                submitBtn.disabled = true;
+                
+                // Revert after 5 seconds if something goes wrong
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 5000);
+            }
+            
+            return true; // Allow form submission
+        });
+    }
+    
+    // Clear password field when modal is closed
+    const deleteModal = document.getElementById('deleteAccountModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('hidden.bs.modal', function() {
+            const passwordInput = document.getElementById('confirmPassword');
+            if (passwordInput) {
+                passwordInput.value = '';
+            }
+            
+            // Reset submit button if it was in loading state
+            const submitBtn = deleteModal.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) {
+                submitBtn.innerHTML = 'حذف الحساب';
+                submitBtn.disabled = false;
+            }
+        });
+    }
+    // Auto-hide alerts after 3 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            // Bootstrap 5 fade out
+            alert.classList.remove('show');
+            alert.classList.add('hide');
+            // Remove from DOM after transition (optional)
+            setTimeout(() => alert.remove(), 500);
+        }, 3000); // 3000ms = 3 seconds
+    });
+
 });
 </script>
 {% endblock %}

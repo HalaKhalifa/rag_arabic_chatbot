@@ -5,8 +5,10 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.utils.translation import gettext_lazy as _
-from .forms import UserRegistrationForm, UserProfileForm
+from .forms import UserRegistrationForm, ProfileUpdateForm
 from .models import User
+from django.http import JsonResponse
+from django.contrib.auth import get_user_model
 
 class UserRegistrationView(CreateView):
     """View for user registration."""
@@ -45,8 +47,6 @@ class UserRegistrationView(CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Register - Bosala AI')
-        context['page_subtitle'] = _('Create a new account')
         return context
 
 
@@ -67,10 +67,6 @@ def user_login_view(request):
         if user is not None:
             # Check if user is a regular user
             if user.is_staff or user.user_type == User.UserType.ADMIN:
-                messages.warning(
-                    request, 
-                    _('Admin users should use the admin login page.')
-                )
                 return redirect('admin:login')
             
             # Login successful
@@ -82,12 +78,8 @@ def user_login_view(request):
             return redirect(next_page)
         else:
             messages.error(request, _('Invalid username or password.'))
-    
-    context = {
-        'page_title': _('Login - Bosala AI'),
-        'page_subtitle': _('Access your account'),
-    }
-    return render(request, 'users/login.html', context)
+
+    return render(request, 'users/login.html')
 
 @login_required
 def user_profile_view(request):
@@ -95,44 +87,45 @@ def user_profile_view(request):
     user = request.user
     
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=user)
+        form = ProfileUpdateForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
             messages.success(request, _('Profile updated successfully!'))
             return redirect('users:profile')
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
+            messages.error(request, _('Please correct the errors below.'))
     else:
-        form = UserProfileForm(instance=user)
+        form = ProfileUpdateForm(instance=user)
     
     context = {
-        'page_title': _('My Profile - Bosala AI'),
-        'page_subtitle': _('Manage your account'),
         'form': form,
         'user': user,
     }
     return render(request, 'users/profile.html', context)
 
+@login_required
+def delete_account_view(request):
+    if request.method != 'POST':
+        return redirect('users:profile')
+
+    user = request.user
+    password = request.POST.get('password')
+
+    if not password:
+        messages.error(request, 'يرجى إدخال كلمة المرور.')
+        return redirect('users:profile')
+
+    if not user.check_password(password):
+        messages.error(request, 'كلمة المرور غير صحيحة. فشل حذف الحساب.')
+        return redirect('users:profile')
+    logout(request)
+    user.delete()
+
+    messages.success(request, 'تم حذف حسابك بنجاح.')
+    return redirect('/')
 
 @login_required
 def user_logout_view(request):
     """View for user logout."""
     logout(request)
-    messages.success(request, _('You have been logged out successfully.'))
     return redirect('/')
-
-def user_list_view(request):
-    """View to list users (for testing, remove in production)."""
-    if not request.user.is_staff:
-        messages.error(request, _('Access denied.'))
-        return redirect('/')
-    
-    users = User.objects.all()
-    context = {
-        'page_title': _('Users List'),
-        'page_subtitle': _('All registered users'),
-        'users': users,
-    }
-    return render(request, 'users/user_list.html', context)
