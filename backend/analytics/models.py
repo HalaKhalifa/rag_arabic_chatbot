@@ -1,6 +1,5 @@
 from django.db import models
-
-# Create your models here.
+from django.conf import settings
 
 class ChatEvent(models.Model):
     CHANNEL_API = "api"
@@ -33,6 +32,13 @@ class ChatEvent(models.Model):
         default=dict,
         blank=True,
         help_text="Extra data for future analytics (e.g., retrieval IDs, client info).",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="chat_events"
     )
 
     class Meta:
