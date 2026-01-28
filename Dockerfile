@@ -13,6 +13,8 @@ RUN pip install --upgrade pip && \
 
 COPY ragchat ./ragchat
 COPY data ./data
+COPY backend ./backend
+
 ENV PYTHONPATH=/app
 
 CMD ["python", "-m", "ragchat.chat_cli"]

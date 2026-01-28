@@ -8,7 +8,7 @@ __pycache__/
 */.DS_Store
 .vscodevenv/
 venv/
-data/
+/data/
 *.pt
 *.bin
 *.ckpt
