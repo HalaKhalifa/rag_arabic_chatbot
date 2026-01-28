@@ -17,22 +17,26 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import render
+from api.views import chat_page, ingest_page
+from django.contrib.auth import views as auth_views
 
 def home(request):
     return render(request, "home.html")
 
-def chat_page(request):
-    return render(request, "api/chat.html")
-
-def ingest_page(request):
-    return render(request, "api/ingest.html")
-
 urlpatterns = [
-    path("", home),
+    path("", home, name='home'),
+    path("admin/", admin.site.urls),
+    path("api/", include("api.urls")),
+    
+    # root shortcuts
     path("chat/", chat_page),
     path("ingest/", ingest_page),
-    path("api/", include("api.urls")),
-    path("analytics/", include("analytics.urls"))
-,
+    
+    # auth
+    path("login/", auth_views.LoginView.as_view(template_name="login.html"), name="login"),
+    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+
+    path("analytics/", include("analytics.urls")),
+    path('users/', include('users.urls')),
 
 ]

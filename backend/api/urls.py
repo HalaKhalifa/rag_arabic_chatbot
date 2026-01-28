@@ -1,9 +1,16 @@
 from django.urls import path
-from .views import health_check, ask, ingest,evaluate
+from . import views
 
 urlpatterns = [
-    path("health/", health_check),
-    path("ask/", ask),
-    path("ingest/", ingest),
-    path("evaluate/", evaluate),
+    # Pages
+    path("chat/", views.chat_page),
+    path("ingest/", views.ingest_page),
+
+    # APIs
+    path("health/", views.health_check),
+    path("ask/", views.ask),
+    path('chat-history/', views.chat_history, name='chat_history'),
+    path('clear-chat-history/', views.clear_chat_history, name='clear_chat_history'),
+    path("ingest-api/", views.ingest),
+    path("evaluate/", views.evaluate),
 ]

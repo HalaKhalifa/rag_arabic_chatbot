@@ -319,6 +319,23 @@
         .fade-in {
             animation: fadeIn 0.5s ease forwards;
         }
+        
+        /* Small metric boxes */
+        .small-metric {
+            text-align: center;
+            padding: 0.75rem;
+        }
+        
+        .small-metric h4 {
+            font-weight: 700;
+            color: var(--primary-700);
+            margin-bottom: 0.25rem;
+        }
+        
+        .small-metric small {
+            color: var(--neutral-600);
+            font-size: 0.85rem;
+        }
     </style>
 {% endblock %}
 
@@ -335,7 +352,7 @@
                         RAG Chatbot Analytics Dashboard
                     </h1>
                     <p class="mb-0">
-                        Real-time insights into our Retrieval-Augmented Generation chatbot's performance, usage patterns, and conversation analytics.
+                        Privacy-focused insights into system performance, usage patterns, and conversation analytics.
                     </p>
                 </div>
                 <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
@@ -372,8 +389,6 @@
                         <option value="">All Channels</option>
                         <option value="api">API</option>
                         <option value="cli">CLI</option>
-                        <option value="web">Web Interface</option>
-                        <option value="mobile">Mobile App</option>
                     </select>
                 </div>
 
@@ -424,10 +439,10 @@
     <div class="row mb-4 fade-in">
         <div class="col-md-3 col-sm-6 mb-4">
             <div class="dashboard-card metric-card">
-                <div class="metric-label">Total Events</div>
+                <div class="metric-label">Total Questions</div>
                 <h2 id="total-events">--</h2>
-                <div class="metric-trend positive">
-                    <i class="bi bi-arrow-up-right me-1"></i> 12% from last week <!-- will be enhanced to become real -->
+                <div class="metric-trend" id="week-trend">
+                    <i class="bi bi-arrow-up-right me-1"></i> <span id="week-trend-value">0%</span> from last week
                 </div>
             </div>
         </div>
@@ -437,33 +452,33 @@
                 <div class="metric-label">Success Rate</div>
                 <h2 id="success-rate">--%</h2>
                 <div class="metric-trend positive">
-                    <i class="bi bi-arrow-up-right me-1"></i> 3% from last week
+                    <i class="bi bi-check-circle me-1"></i> System Health
                 </div>
             </div>
         </div>
 
         <div class="col-md-3 col-sm-6 mb-4">
             <div class="dashboard-card metric-card">
-                <div class="metric-label">Avg. Latency</div>
+                <div class="metric-label">Avg. Response Time</div>
                 <h2 id="avg-latency">-- ms</h2>
-                <div class="metric-trend negative">
-                    <i class="bi bi-arrow-down-right me-1"></i> 8% from last week
+                <div class="metric-trend" id="latency-trend">
+                    <i class="bi bi-speedometer2 me-1"></i> P95: <span id="p95-latency">-- ms</span>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3 col-sm-6 mb-4">
             <div class="dashboard-card metric-card">
-                <div class="metric-label">Avg. Relevance Score</div>
-                <h2 id="avg-score">--</h2>
+                <div class="metric-label">Active Users (7d)</div>
+                <h2 id="active-users">--</h2>
                 <div class="metric-trend positive">
-                    <i class="bi bi-arrow-up-right me-1"></i> 5% from last week
+                    <i class="bi bi-people me-1"></i> Engagement
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ================= CHARTS ROW 1 ================= -->
+    <!-- ================= ORIGINAL CHARTS ROW 1 ================= -->
     <div class="row mb-4 fade-in">
         <div class="col-lg-6 mb-4">
             <div class="dashboard-card h-100">
@@ -492,7 +507,7 @@
         </div>
     </div>
 
-    <!-- ================= CHARTS ROW 2 ================= -->
+    <!-- ================= ORIGINAL CHARTS ROW 2 ================= -->
     <div class="row mb-4 fade-in">
         <div class="col-lg-6 mb-4">
             <div class="dashboard-card h-100">
@@ -521,16 +536,190 @@
         </div>
     </div>
 
-    <!-- ================= TOPICS CHART ================= -->
+    <!-- ================= ENGAGEMENT ANALYTICS ================= -->
+    <div class="row mb-4 fade-in">
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-activity me-2"></i> User Engagement
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-4 text-center small-metric">
+                            <h5 id="unique-users">--</h5>
+                            <small class="text-muted">Total Users</small>
+                        </div>
+                        <div class="col-4 text-center small-metric">
+                            <h5 id="engagement-rate">--%</h5>
+                            <small class="text-muted">Engagement Rate</small>
+                        </div>
+                        <div class="col-4 text-center small-metric">
+                            <h5 id="avg-session-length">--</h5>
+                            <small class="text-muted">Avg Questions/Session</small>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="engagement-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-clock me-2"></i> Usage Patterns
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="hourly-activity-chart"></canvas>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            Peak Hours: <span id="peak-hours">--:--, --:--, --:--</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= QUALITY METRICS ================= -->
+    <div class="row mb-4 fade-in">
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-steps me-2"></i> Response Quality
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-3 text-center small-metric">
+                            <h5 id="excellent-responses">--</h5>
+                            <small class="text-muted">Excellent</small>
+                        </div>
+                        <div class="col-3 text-center small-metric">
+                            <h5 id="good-responses">--</h5>
+                            <small class="text-muted">Good</small>
+                        </div>
+                        <div class="col-3 text-center small-metric">
+                            <h5 id="fair-responses">--</h5>
+                            <small class="text-muted">Fair</small>
+                        </div>
+                        <div class="col-3 text-center small-metric">
+                            <h5 id="poor-responses">--</h5>
+                            <small class="text-muted">Needs Improvement</small>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="quality-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart me-2"></i> Context Usage
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="context-usage-chart"></canvas>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            Avg. Contexts per Query: <span id="avg-contexts">--</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PERFORMANCE ANALYTICS ================= -->
+    <div class="row mb-4 fade-in">
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-speedometer me-2"></i> System Performance
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-4 text-center small-metric">
+                            <h5 id="today-questions">--</h5>
+                            <small class="text-muted">Today's Questions</small>
+                        </div>
+                        <div class="col-4 text-center small-metric">
+                            <h5 id="today-success-rate">--%</h5>
+                            <small class="text-muted">Today's Success</small>
+                        </div>
+                        <div class="col-4 text-center small-metric">
+                            <h5 id="system-uptime">--%</h5>
+                            <small class="text-muted">System Uptime</small>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="performance-trend-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="card-header">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Error Analysis
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="error-analysis-chart"></canvas>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            Total Errors: <span id="total-errors">--</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= QUESTION ANALYSIS ================= -->
     <div class="row fade-in">
         <div class="col-12">
             <div class="dashboard-card">
                 <div class="card-header">
-                    <i class="bi bi-tags me-2"></i> Popular Topics & Keywords
+                    <i class="bi bi-chat-left-text me-2"></i> Question Analysis
                 </div>
                 <div class="card-body">
-                    <div class="chart-container" style="height: 220px;">
-                        <canvas id="topics-chart"></canvas>
+                    <div class="row mb-3">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center small-metric">
+                                <h4 id="avg-question-length">--</h4>
+                                <small class="text-muted">Avg Question Length</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center small-metric">
+                                <h4 id="avg-answer-length">--</h4>
+                                <small class="text-muted">Avg Answer Length</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center small-metric">
+                                <h4 id="what-questions">--%</h4>
+                                <small class="text-muted">"What" Questions</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center small-metric">
+                                <h4 id="how-questions">--%</h4>
+                                <small class="text-muted">"How" Questions</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="question-types-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -539,6 +728,7 @@
 
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
 /* ---------------- Helpers ---------------- */
@@ -602,22 +792,6 @@ function bucketLatency(values) {
     return buckets;
 }
 
-function extractKeywords(questions) {
-    const stopwords = ["ما", "هو", "هي", "في", "من", "على", "عن", "؟","أين","كيف"];
-    const freq = {};
-
-    questions.forEach(q => {
-        q.split(" ").forEach(word => {
-            if (word.length < 3 || stopwords.includes(word)) return;
-            freq[word] = (freq[word] || 0) + 1;
-        });
-    });
-
-    return Object.entries(freq)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10);
-}
-
 /* ---------------- API Calls ---------------- */
 async function fetchSummary() {
     const res = await fetch("/analytics/summary/" + buildQueryParams());
@@ -634,16 +808,42 @@ async function fetchTopQuestions() {
     return res.json();
 }
 
+async function fetchEngagementMetrics() {
+    const res = await fetch("/analytics/engagement/" + buildQueryParams());
+    return res.json();
+}
+
+async function fetchQualityMetrics() {
+    const res = await fetch("/analytics/quality-metrics/" + buildQueryParams());
+    return res.json();
+}
+
+async function fetchTopicAnalysis() {
+    const res = await fetch("/analytics/topic-analysis/" + buildQueryParams());
+    return res.json();
+}
+
+async function fetchPerformanceMetrics() {
+    const res = await fetch("/analytics/performance/" + buildQueryParams());
+    return res.json();
+}
+
 /* ---------------- Charts ---------------- */
 let dailyChart = null;
 let topQuestionsChart = null;
 let successChart = null;
 let latencyChart = null;
-let topicsChart = null;
+let engagementChart = null;
+let hourlyActivityChart = null;
+let qualityDistributionChart = null;
+let contextUsageChart = null;
+let performanceTrendChart = null;
+let errorAnalysisChart = null;
+let questionTypesChart = null;
 
-// Initialize
-function initializeCharts() {
-    // Daily Chart
+// Initialize all charts
+function initializeAllCharts() {
+    // Daily Chart - Questions Per Day
     dailyChart = new Chart(document.getElementById("daily-chart"), {
         type: "line",
         data: {
@@ -747,10 +947,10 @@ function initializeCharts() {
     latencyChart = new Chart(document.getElementById("latency-chart"), {
         type: "bar",
         data: {
-            labels: [],
+            labels: ["<500ms", "500–1000ms", "1–2s", ">2s"],
             datasets: [{
                 label: "Requests",
-                data: [],
+                data: [0, 0, 0, 0],
                 backgroundColor: "#2a6f97",
                 borderRadius: 6
             }]
@@ -779,15 +979,102 @@ function initializeCharts() {
         }
     });
 
-    // Topics Chart
-    topicsChart = new Chart(document.getElementById("topics-chart"), {
-        type: "bar",
+    // Engagement Chart
+    engagementChart = new Chart(document.getElementById("engagement-chart"), {
+        type: "line",
         data: {
             labels: [],
             datasets: [{
-                label: "Frequency",
+                label: "Daily Active Users",
                 data: [],
-                backgroundColor: "#014f86",
+                borderColor: "#40916c",
+                backgroundColor: "rgba(64, 145, 108, 0.1)",
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: "rgba(0, 0, 0, 0.05)"
+                    },
+                    title: {
+                        display: true,
+                        text: 'Active Users'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Hourly Activity Chart
+    hourlyActivityChart = new Chart(document.getElementById("hourly-activity-chart"), {
+        type: "bar",
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            datasets: [{
+                label: "Questions",
+                data: Array(24).fill(0),
+                backgroundColor: "#2c7da0",
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: "rgba(0, 0, 0, 0.05)"
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Questions'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxTicksLimit: 12
+                    }
+                }
+            }
+        }
+    });
+
+    // Quality Distribution Chart
+    qualityDistributionChart = new Chart(document.getElementById("quality-distribution-chart"), {
+        type: "bar",
+        data: {
+            labels: ["Excellent", "Good", "Fair", "Poor", "No Score"],
+            datasets: [{
+                label: "Responses",
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: ["#40916c", "#52b788", "#ffc107", "#dc3545", "#6c757d"],
                 borderRadius: 6
             }]
         },
@@ -804,6 +1091,158 @@ function initializeCharts() {
                     beginAtZero: true,
                     grid: {
                         color: "rgba(0, 0, 0, 0.05)"
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Responses'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Context Usage Chart
+    contextUsageChart = new Chart(document.getElementById("context-usage-chart"), {
+        type: "doughnut",
+        data: {
+            labels: ["No Contexts", "1-3 Contexts", "4-6 Contexts", "7+ Contexts"],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ["#6c757d", "#95d5b2", "#40916c", "#1b4332"],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Performance Trend Chart
+    performanceTrendChart = new Chart(document.getElementById("performance-trend-chart"), {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "Success Rate",
+                    data: [],
+                    borderColor: "#40916c",
+                    backgroundColor: "rgba(64, 145, 108, 0.1)",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: "rgba(0, 0, 0, 0.05)"
+                    },
+                    title: {
+                        display: true,
+                        text: 'Success Rate (%)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Error Analysis Chart
+    errorAnalysisChart = new Chart(document.getElementById("error-analysis-chart"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Errors",
+                data: [],
+                backgroundColor: "#dc3545",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        color: "rgba(0, 0, 0, 0.05)"
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+
+    // Question Types Chart
+    questionTypesChart = new Chart(document.getElementById("question-types-chart"), {
+        type: "bar",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Percentage",
+                data: [],
+                backgroundColor: "#014f86",
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: {
+                        color: "rgba(0, 0, 0, 0.05)"
+                    },
+                    title: {
+                        display: true,
+                        text: 'Percentage (%)'
                     }
                 },
                 x: {
@@ -816,88 +1255,307 @@ function initializeCharts() {
     });
 }
 
-async function applyFilters() {
-    // loading state
-    document.querySelectorAll('.metric-card h2').forEach(el => {
-        el.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
-    });
-
+/* ---------------- Update Analytics Data ---------------- */
+async function updateAllAnalytics() {
     try {
-        const summary = await fetchSummary();
+        // Fetch all analytics data
+        const [summary, daily, topQuestions, engagement, quality, topics, performance] = await Promise.all([
+            fetchSummary(),
+            fetchDaily(),
+            fetchTopQuestions(),
+            fetchEngagementMetrics(),
+            fetchQualityMetrics(),
+            fetchTopicAnalysis(),
+            fetchPerformanceMetrics()
+        ]);
 
-        // metric cards
-        document.getElementById("total-events").innerText = summary.total_events || "0";
-        document.getElementById("success-rate").innerText = 
-            (summary.success_rate * 100).toFixed(1) + "%" || "0%";
-        document.getElementById("avg-latency").innerText = 
-            (summary.avg_latency_ms || 0).toFixed(0) + " ms";
-        document.getElementById("avg-score").innerText = 
-            (summary.avg_top_score || 0).toFixed(2);
-
-        // daily chart
-        const daily = await fetchDaily();
-        if (dailyChart && daily.results) {
-            dailyChart.data.labels = daily.results.map(x => x.day);
-            dailyChart.data.datasets[0].data = daily.results.map(x => x.total);
-            dailyChart.update();
-        }
-
-        // top questions chart
-        const top = await fetchTopQuestions();
-        if (topQuestionsChart && top.results) {
-            // Truncate long questions for display
-            topQuestionsChart.data.labels = top.results.map(x => {
-                const q = x.question || "";
-                return q.length > 30 ? q.substring(0, 30) + "..." : q;
-            });
-            topQuestionsChart.data.datasets[0].data = top.results.map(x => x.count);
-            topQuestionsChart.update();
-        }
-
-        // success chart
-        if (successChart) {
-            successChart.data.datasets[0].data = [
-                summary.successful || 0,
-                summary.failed || 0
-            ];
-            successChart.update();
-        }
-
-        // latency chart
-        const exportDataRes = await fetch("/analytics/export/?format=json" + buildQueryParams());
-        const exportJson = await exportDataRes.json();
-        const latencies = exportJson.results ? exportJson.results.map(x => x.latency_ms || 0) : [];
+        // Update summary metrics
+        updateSummaryMetrics(summary, engagement, quality, performance);
         
-        const latencyBuckets = bucketLatency(latencies);
+        // Update original charts
+        updateOriginalCharts(summary, daily, topQuestions);
         
-        if (latencyChart) {
-            latencyChart.data.labels = Object.keys(latencyBuckets);
-            latencyChart.data.datasets[0].data = Object.values(latencyBuckets);
-            latencyChart.update();
-        }
-
-        // topics chart
-        const questions = exportJson.results ? exportJson.results.map(x => x.question || "") : [];
-        const keywords = extractKeywords(questions);
+        // Update engagement charts
+        updateEngagementCharts(engagement, performance);
         
-        if (topicsChart) {
-            topicsChart.data.labels = keywords.map(k => k[0]);
-            topicsChart.data.datasets[0].data = keywords.map(k => k[1]);
-            topicsChart.update();
-        }
+        // Update quality charts
+        updateQualityCharts(quality);
+        
+        // Update topic analysis
+        updateTopicAnalysis(topics);
+        
+        // Update performance metrics
+        updatePerformanceMetrics(performance);
 
     } catch (error) {
         console.error("Error fetching analytics data:", error);
-        // Show error state
-        document.querySelectorAll('.metric-card h2').forEach(el => {
-            el.innerText = "--";
-        });
+        showErrorState();
     }
 }
 
-/* Initialize on load */
+function updateSummaryMetrics(summary, engagement, quality, performance) {
+    // Total events with trend
+    document.getElementById("total-events").innerText = summary.total_events || "0";
+    const weekTrend = document.getElementById("week-trend");
+    const weekTrendValue = summary.trends?.week_over_week || 0;
+    weekTrend.className = `metric-trend ${weekTrendValue >= 0 ? 'positive' : 'negative'}`;
+    document.getElementById("week-trend-value").innerText = `${Math.abs(weekTrendValue).toFixed(1)}%`;
+    
+    // Success rate
+    document.getElementById("success-rate").innerText = 
+        (summary.success_rate * 100).toFixed(1) + "%";
+    
+    // Avg latency with P95
+    document.getElementById("avg-latency").innerText = 
+        (summary.avg_latency_ms || 0).toFixed(0) + " ms";
+    document.getElementById("p95-latency").innerText = 
+        (quality.latency_percentiles?.p95 || 0).toFixed(0) + " ms";
+    
+    // Active users
+    document.getElementById("active-users").innerText = 
+        engagement.engagement_metrics?.active_users_7d || "0";
+}
+
+function updateOriginalCharts(summary, daily, topQuestions) {
+    // Daily chart
+    if (daily.results && dailyChart) {
+        dailyChart.data.labels = daily.results.map(x => x.day);
+        dailyChart.data.datasets[0].data = daily.results.map(x => x.total);
+        dailyChart.update();
+    }
+    
+    // Top questions chart
+    if (topQuestions.results && topQuestionsChart) {
+        topQuestionsChart.data.labels = topQuestions.results.map(x => {
+            const q = x.question || "";
+            return q.length > 30 ? q.substring(0, 30) + "..." : q;
+        });
+        topQuestionsChart.data.datasets[0].data = topQuestions.results.map(x => x.count);
+        topQuestionsChart.update();
+    }
+    
+    // Success chart
+    if (successChart) {
+        successChart.data.datasets[0].data = [
+            summary.successful || 0,
+            summary.failed || 0
+        ];
+        successChart.update();
+    }
+    
+    // Get latency data for distribution
+    fetch("/analytics/export/?format=json" + buildQueryParams())
+        .then(res => res.json())
+        .then(exportJson => {
+            if (exportJson.results && latencyChart) {
+                const latencies = exportJson.results.map(x => x.latency_ms || 0);
+                const latencyBuckets = bucketLatency(latencies);
+                
+                latencyChart.data.datasets[0].data = [
+                    latencyBuckets["<500ms"] || 0,
+                    latencyBuckets["500–1000ms"] || 0,
+                    latencyBuckets["1–2s"] || 0,
+                    latencyBuckets[">2s"] || 0
+                ];
+                latencyChart.update();
+            }
+        });
+}
+
+function updateEngagementCharts(engagement, performance) {
+    // Engagement metrics
+    if (engagement.engagement_metrics) {
+        document.getElementById("unique-users").innerText = 
+            engagement.engagement_metrics.unique_users_total || "0";
+        document.getElementById("engagement-rate").innerText = 
+            (engagement.engagement_metrics.engagement_rate_7d || 0).toFixed(1) + "%";
+        document.getElementById("avg-session-length").innerText = 
+            (engagement.engagement_metrics.avg_questions_per_session || 0).toFixed(1);
+    }
+    
+    // Engagement chart - FIX for the issue with single point
+    if (engagement.daily_activity && engagementChart) {
+        // Ensure we have data for all dates in the range
+        const startDate = document.getElementById("filter-start").value;
+        const endDate = document.getElementById("filter-end").value;
+        
+        // Create date range
+        const dates = getDateRange(startDate, endDate);
+        
+        // Create a map of existing data
+        const dataMap = {};
+        engagement.daily_activity.forEach(item => {
+            dataMap[item.date] = item.active_users || 0;
+        });
+        
+        // Fill in missing dates with 0
+        const filledData = dates.map(date => ({
+            date: date,
+            active_users: dataMap[date] || 0
+        }));
+        
+        engagementChart.data.labels = filledData.map(x => formatDate(x.date));
+        engagementChart.data.datasets[0].data = filledData.map(x => x.active_users);
+        engagementChart.update();
+    }
+    
+    // Hourly activity
+    if (engagement.hourly_patterns && hourlyActivityChart) {
+        // Reset all hours to 0
+        hourlyActivityChart.data.datasets[0].data = Array(24).fill(0);
+        
+        // Update with actual data
+        engagement.hourly_patterns.forEach(item => {
+            const hour = new Date(item.hour).getHours();
+            hourlyActivityChart.data.datasets[0].data[hour] = item.total_questions;
+        });
+        hourlyActivityChart.update();
+    }
+    
+    // Peak hours
+    if (performance.peak_hours) {
+        const peakHours = performance.peak_hours.map(item => item.hour).join(", ");
+        document.getElementById("peak-hours").innerText = peakHours || "--:--";
+    }
+}
+
+function updateQualityCharts(quality) {
+    // Quality distribution
+    if (quality.quality_distribution && qualityDistributionChart) {
+        const dist = quality.quality_distribution;
+        qualityDistributionChart.data.datasets[0].data = [
+            dist.excellent || 0,
+            dist.good || 0,
+            dist.fair || 0,
+            dist.poor || 0,
+            dist.no_score || 0
+        ];
+        qualityDistributionChart.update();
+        
+        // Update individual metrics
+        document.getElementById("excellent-responses").innerText = dist.excellent || "0";
+        document.getElementById("good-responses").innerText = dist.good || "0";
+        document.getElementById("fair-responses").innerText = dist.fair || "0";
+        document.getElementById("poor-responses").innerText = dist.poor || "0";
+    }
+    
+    // Context usage
+    if (quality.context_usage && contextUsageChart) {
+        const usage = quality.context_usage;
+        contextUsageChart.data.datasets[0].data = [
+            usage.no_contexts || 0,
+            usage["1_3_contexts"] || 0,
+            usage["4_6_contexts"] || 0,
+            usage["7_plus_contexts"] || 0
+        ];
+        contextUsageChart.update();
+        
+        document.getElementById("avg-contexts").innerText = 
+            (quality.avg_contexts_per_query || 0).toFixed(1);
+    }
+    
+    // Error analysis
+    if (quality.error_analysis && errorAnalysisChart) {
+        const errors = quality.error_analysis;
+        errorAnalysisChart.data.labels = errors.map(e => e.error_type || "Unknown");
+        errorAnalysisChart.data.datasets[0].data = errors.map(e => e.count);
+        errorAnalysisChart.update();
+        
+        document.getElementById("total-errors").innerText = 
+            errors.reduce((sum, e) => sum + e.count, 0) || "0";
+    }
+    
+    // Performance trend
+    if (quality.success_over_time && performanceTrendChart) {
+        performanceTrendChart.data.labels = quality.success_over_time.map(x => formatDate(x.date));
+        performanceTrendChart.data.datasets[0].data = quality.success_over_time.map(x => x.success_rate || 0);
+        performanceTrendChart.update();
+    }
+}
+
+function updateTopicAnalysis(topics) {
+    // Question analysis
+    if (topics.question_analysis) {
+        document.getElementById("avg-question-length").innerText = 
+            (topics.question_analysis.avg_length || 0).toFixed(0);
+        document.getElementById("avg-answer-length").innerText = 
+            (topics.answer_analysis?.avg_answer_length || 0).toFixed(0);
+    }
+    
+    // Question types
+    if (topics.question_types && questionTypesChart) {
+        const questionTypes = topics.question_types;
+        questionTypesChart.data.labels = Object.keys(questionTypes);
+        questionTypesChart.data.datasets[0].data = Object.values(questionTypes).map(t => t.percentage || 0);
+        questionTypesChart.update();
+        
+        // Update specific question type metrics
+        document.getElementById("what-questions").innerText = 
+            (questionTypes["What Questions"]?.percentage || 0).toFixed(1) + "%";
+        document.getElementById("how-questions").innerText = 
+            (questionTypes["How Questions"]?.percentage || 0).toFixed(1) + "%";
+    }
+}
+
+function updatePerformanceMetrics(performance) {
+    // Today's performance
+    if (performance.today_performance) {
+        document.getElementById("today-questions").innerText = 
+            performance.today_performance.count || "0";
+        document.getElementById("today-success-rate").innerText = 
+            (performance.today_performance.success_rate || 0).toFixed(1) + "%";
+    }
+    
+    // System uptime
+    document.getElementById("system-uptime").innerText = 
+        performance.system_uptime || "--%";
+}
+
+/* ---------------- Helper Functions ---------------- */
+function getDateRange(startDate, endDate) {
+    const dates = [];
+    let currentDate = new Date(startDate);
+    const end = new Date(endDate);
+    
+    while (currentDate <= end) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function showErrorState() {
+    document.querySelectorAll('.metric-card h2, .small-metric h4, .small-metric h5').forEach(el => {
+        el.innerText = "--";
+    });
+}
+
+/* ---------------- Main Apply Filters Function ---------------- */
+async function applyFilters() {
+    // Show loading state
+    document.querySelectorAll('.metric-card h2, .small-metric h4, .small-metric h5').forEach(el => {
+        if (el.textContent !== "--") {
+            el.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        }
+    });
+
+    try {
+        await updateAllAnalytics();
+    } catch (error) {
+        console.error("Error fetching analytics data:", error);
+        showErrorState();
+    }
+}
+
+/* ---------------- Initialize ---------------- */
 document.addEventListener('DOMContentLoaded', function() {
-    initializeCharts();
+    initializeAllCharts();
     
     // Set default date range (last 7 days)
     const endDate = new Date();
