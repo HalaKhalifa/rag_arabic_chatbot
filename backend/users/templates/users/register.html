@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Admin Login - Bosala AI{% endblock %}
+{% block title %}Register - Bosala AI{% endblock %}
 
 {% block content %}
 <div class="login-container" dir="rtl">
     <div class="row justify-content-center">
         <div class="col-12 d-flex justify-content-center">
             <div class="login-card">
-                <!-- Login Header -->
+                <!-- Register Header -->
                 <div class="login-header">
                     <div class="login-logo">
                         <img src="{% static 'images/bosala-logo.png' %}" 
@@ -16,43 +16,28 @@
                              class="mb-2">
                     </div>
                     <h2 class="login-title">
-                        <i class="bi bi-shield-lock ms-2"></i>
-                        بوابة المشرفين
+                        <i class="bi bi-person-plus ms-2"></i>
+                        إنشاء حساب جديد
                     </h2>
                     <p class="login-subtitle">
-                        نظام إدارة Bosala AI - دخول المشرفين
+                        انضم إلى نظام Bosala AI للغة العربية
                     </p>
                 </div>
 
-                <!-- Login Form -->
+                <!-- Register Form -->
                 <div class="login-body">
-                    {% if form.errors %}
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle ms-2"></i>
-                        اسم المستخدم أو كلمة المرور غير صحيحة. الرجاء المحاولة مرة أخرى.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endif %}
-                    
-                    {% if next %}
-                        {% if user.is_authenticated %}
-                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-circle ms-2"></i>
-                            ليس لديك صلاحية للوصول إلى هذه الصفحة.
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} ms-2"></i>
+                            {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-                        {% else %}
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
-                            <i class="bi bi-info-circle ms-2"></i>
-                            الرجاء تسجيل الدخول للوصول إلى هذه الصفحة.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                        {% endif %}
+                        {% endfor %}
                     {% endif %}
 
-                    <form method="post" action="{% url 'admin:login' %}">
+                    <form method="post" novalidate>
                         {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ next }}">
                         
                         <!-- Username Field -->
                         <div class="form-group mb-3">
@@ -64,43 +49,128 @@
                                 <input type="text" 
                                        name="username" 
                                        id="id_username" 
-                                       class="form-control" 
-                                       placeholder="أدخل اسم المستخدم"
+                                       class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                       placeholder="اختر اسم مستخدم"
                                        required
-                                       autofocus>
+                                       autofocus
+                                       value="{{ form.username.value|default:'' }}">
                                 <span class="input-group-text">
                                     <i class="bi bi-person-fill"></i>
                                 </span>
+                                {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <small class="form-text text-muted">يجب أن يكون اسم المستخدم فريدًا ويمكن استخدامه للدخول.</small>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="form-group mb-3">
+                            <label for="id_email" class="form-label mb-1 rtl-label">
+                                البريد الإلكتروني
+                                <i class="bi bi-envelope"></i>
+                            </label>                            
+                            <div class="input-group">
+                                <input type="email" 
+                                       name="email" 
+                                       id="id_email" 
+                                       class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                       placeholder="أدخل بريدك الإلكتروني"
+                                       required
+                                       value="{{ form.email.value|default:'' }}">
+                                <span class="input-group-text">
+                                    <i class="bi bi-envelope-fill"></i>
+                                </span>
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Password Field -->
-                        <div class="form-group mb-4">
-                            <label for="id_password" class="form-label mb-1 rtl-label">
+                        <div class="form-group mb-3">
+                            <label for="id_password1" class="form-label mb-1 rtl-label">
                                 كلمة المرور
                                 <i class="bi bi-key"></i>
                             </label>
                             <div class="input-group">
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword1">
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 <input type="password" 
-                                       name="password" 
-                                       id="id_password" 
-                                       class="form-control" 
+                                       name="password1" 
+                                       id="id_password1" 
+                                       class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
                                        placeholder="أدخل كلمة المرور"
                                        required>
                                 <span class="input-group-text">
                                     <i class="bi bi-lock-fill"></i>
                                 </span>
+                                {% if form.password1.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password1.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <small class="form-text text-muted">
+                                يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل ولا تكون شائعة.
+                            </small>
+                        </div>
+
+                        <!-- Confirm Password Field -->
+                        <div class="form-group mb-4">
+                            <label for="id_password2" class="form-label mb-1 rtl-label">
+                                تأكيد كلمة المرور
+                                <i class="bi bi-key-fill"></i>
+                            </label>
+                            <div class="input-group">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <input type="password" 
+                                       name="password2" 
+                                       id="id_password2" 
+                                       class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                       placeholder="أعد إدخال كلمة المرور"
+                                       required>
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock-fill"></i>
+                                </span>
+                                {% if form.password2.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password2.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Submit Button -->
                         <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
-                            <i class="bi bi-box-arrow-in-right ms-2"></i>
-                            تسجيل الدخول
+                            <i class="bi bi-person-plus ms-2"></i>
+                            إنشاء الحساب
                         </button>
+
+                        <!-- Login Link -->
+                        <div class="text-center mb-2">
+                            <p class="small text-muted">
+                                لديك حساب بالفعل؟ 
+                                <a href="{% url 'users:login' %}" class="text-decoration-none">
+                                    سجل الدخول
+                                </a>
+                            </p>
+                        </div>
 
                         <!-- Back to Home -->
                         <div class="text-center mt-2">
@@ -119,6 +189,7 @@
 
 {% block extra_css %}
 <style>
+    /* Same CSS as login.html but with some adjustments */
     .login-container {
         padding: 1.5rem;
         display: flex;
@@ -136,14 +207,14 @@
         overflow: hidden;
         border: 1px solid var(--border-color);
         width: 100%;
-        max-width: 420px;
+        max-width: 450px;
         min-width: 320px;
         margin: 0 auto;
         direction: rtl;
     }
 
     .login-header {
-        background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-800) 100%);
+        background: linear-gradient(135deg, var(--primary-600) 0%, var(--accent-600) 100%);
         color: white;
         padding: 1.25rem;
         text-align: center;
@@ -229,6 +300,10 @@
         height: 45px;
     }
 
+    .form-control.is-invalid {
+        border: 1px solid #dc3545;
+    }
+
     .form-control::placeholder {
         text-align: right;
         direction: rtl;
@@ -258,7 +333,7 @@
     }
 
     .btn-primary {
-        background: linear-gradient(to left, var(--primary-600), var(--primary-700));
+        background: linear-gradient(to left, var(--primary-600), var(--accent-600));
         border: none;
         padding: 0.65rem;
         font-weight: 600;
@@ -273,7 +348,7 @@
     }
 
     .btn-primary:hover {
-        background: linear-gradient(to left, var(--primary-700), var(--primary-800));
+        background: linear-gradient(to left, var(--primary-700), var(--accent-700));
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(64, 145, 108, 0.2);
     }
@@ -308,6 +383,12 @@
         border-right-color: #0d6efd;
     }
 
+    .alert-success {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #0a3622;
+        border-right-color: #198754;
+    }
+
     .alert .btn-close {
         margin-right: auto;
         margin-left: 0.5rem;
@@ -323,6 +404,21 @@
         direction: rtl;
     }
 
+    .form-text {
+        font-size: 0.75rem;
+        color: var(--neutral-600);
+        margin-top: 0.25rem;
+        text-align: right;
+    }
+
+    .invalid-feedback {
+        display: block;
+        text-align: right;
+        font-size: 0.8rem;
+        color: #dc3545;
+        margin-top: 0.25rem;
+    }
+
     /* Responsive adjustments */
     @media (min-width: 576px) {
         .login-container {
@@ -330,7 +426,7 @@
         }
         
         .login-card {
-            max-width: 380px;
+            max-width: 420px;
         }
         
         .login-header {
@@ -350,55 +446,6 @@
         }
     }
 
-    @media (min-width: 768px) {
-        .login-container {
-            padding: 2.5rem;
-        }
-        
-        .login-card {
-            max-width: 360px;
-        }
-        
-        .login-header {
-            padding: 2rem 1.75rem;
-        }
-        
-        .login-body {
-            padding: 2rem;
-        }
-        
-    }
-
-    @media (min-width: 992px) {
-        .login-container {
-            padding: 3rem;
-            min-height: calc(100vh - 56px - 140px);
-        }
-        
-        .login-card {
-            max-width: 380px;
-        }
-    }
-
-    @media (min-width: 1200px) {
-        .login-container {
-            padding: 3rem;
-        }
-        
-        .login-card {
-            max-width: 400px;
-        }
-        
-        .login-header {
-            padding: 2.25rem 2rem;
-        }
-        
-        .login-body {
-            padding: 2.25rem 2rem;
-        }
-    }
-
-    /* Mobile adjustments */
     @media (max-width: 575.98px) {
         .login-container {
             padding: 1rem;
@@ -458,29 +505,41 @@
             font-size: 0.9rem;
         }
     }
-
-    /* For very tall screens - add some spacing */
-    @media (min-height: 900px) {
-        .login-container {
-            padding: 4rem 2rem;
-        }
-    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle password visibility
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordInput = document.getElementById('id_password');
+    // Toggle password visibility for password1
+    const togglePassword1 = document.getElementById('togglePassword1');
+    const passwordInput1 = document.getElementById('id_password1');
     
-    if (togglePassword && passwordInput) {
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
+    if (togglePassword1 && passwordInput1) {
+        togglePassword1.addEventListener('click', function() {
+            const type = passwordInput1.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput1.setAttribute('type', type);
             
-            // Toggle eye icon
+            const icon = this.querySelector('i');
+            if (type === 'password') {
+                icon.className = 'bi bi-eye';
+                this.setAttribute('title', 'إظهار كلمة المرور');
+            } else {
+                icon.className = 'bi bi-eye-slash';
+                this.setAttribute('title', 'إخفاء كلمة المرور');
+            }
+        });
+    }
+    
+    // Toggle password visibility for password2
+    const togglePassword2 = document.getElementById('togglePassword2');
+    const passwordInput2 = document.getElementById('id_password2');
+    
+    if (togglePassword2 && passwordInput2) {
+        togglePassword2.addEventListener('click', function() {
+            const type = passwordInput2.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput2.setAttribute('type', type);
+            
             const icon = this.querySelector('i');
             if (type === 'password') {
                 icon.className = 'bi bi-eye';
@@ -511,6 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
     // Auto-hide alerts after 3 seconds
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(function(alert) {
@@ -522,6 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => alert.remove(), 500);
         }, 3000); // 3000ms = 3 seconds
     });
+
 });
 </script>
 {% endblock %}

@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'analytics',
     "users",
 ]
+AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -131,8 +132,8 @@ STATICFILES_DIRS = [
 ]
 
 
-LOGIN_URL = "/login/"
-LOGIN_REDIRECT_URL = "/analytics/"
+LOGIN_URL = "/users/login/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 # Default primary key field type

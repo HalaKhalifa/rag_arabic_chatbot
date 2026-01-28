@@ -14,6 +14,8 @@ from ragchat.logger import logger
 import json
 from .services.rag_service import ingest_text_to_qdrant
 from .services.eval_service import evaluate_prediction
+from django.contrib.auth.decorators import login_required
+from .models import ChatHistory
 
 try:
     embedder = TextEmbedder(RAGSettings.emb_model)
@@ -73,8 +75,23 @@ def ask(request):
             success = False
             error_type = "context_missing"
         
+        # Create ChatHistory entry for authenticated users
+        chat_history_entry = None
+        if request.user.is_authenticated:
+            try:
+                chat_history_entry = ChatHistory.objects.create(
+                    user=request.user,
+                    question=question,
+                    answer=answer,
+                    sources=contexts
+                )
+            except Exception as save_exc:
+                logger.warning(f"Failed to save chat history: {save_exc}")
+
+        # Log analytics event
         try:
             log_chat_event(
+                user=request.user if request.user.is_authenticated else None,
                 channel="api",
                 question=question,
                 answer=answer,
@@ -85,7 +102,9 @@ def ask(request):
                 error_type=error_type,
                 metadata={
                     "retrieved_contexts_count": len(contexts),
+                    "chat_history_id": chat_history_entry.id if chat_history_entry else None
                 },
+                session_id=str(request.user.id) if request.user.is_authenticated else None
             )
         except Exception as log_exc:
             logger.warning(f"Failed to log analytics event: {log_exc}")
@@ -152,6 +171,23 @@ def evaluate(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+
+@login_required
+def chat_history(request):
+    history = ChatHistory.objects.filter(user=request.user).order_by("-timestamp")[:20]
+    results = [
+        {"question": h.question, "answer": h.answer, "timestamp": h.timestamp.isoformat(), "sources": h.sources}
+        for h in history
+    ]
+    return JsonResponse({"results": results})
+
+@login_required
+@csrf_exempt
+def clear_chat_history(request):
+    if request.method == "POST":
+        ChatHistory.objects.filter(user=request.user).delete()
+        return JsonResponse({"status": "ok"})
+    return JsonResponse({"error": "POST required"}, status=405)
 
 def chat_page(request):
     """

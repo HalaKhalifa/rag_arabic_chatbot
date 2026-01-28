@@ -181,6 +181,52 @@
             font-size: 1.1rem;
         }
 
+        /* User Dropdown Styling */
+        .user-dropdown .dropdown-toggle {
+            padding-right: 0.5rem !important;
+            padding-left: 0.5rem !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .user-dropdown .dropdown-toggle::after {
+            margin-right: 0.5rem;
+            margin-left: 0;
+        }
+
+        .user-dropdown .dropdown-menu {
+            background: var(--primary-900);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-dropdown .dropdown-item {
+            color: var(--primary-200) !important;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            text-align: right;
+            direction: rtl;
+        }
+
+        .user-dropdown .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white !important;
+        }
+
+        .user-dropdown .dropdown-item i {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .user-dropdown .dropdown-divider {
+            border-color: rgba(255, 255, 255, 0.1);
+            margin: 0.25rem 0;
+        }
+
         /* Auth Links Styling */
         .auth-links {
             display: flex;
@@ -245,6 +291,36 @@
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.9%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
         }
 
+        /* Mobile responsive adjustments for auth links */
+        @media (max-width: 992px) {
+            .auth-links {
+                margin-left: 0;
+                padding-left: 0;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+                padding-top: 0.75rem;
+                margin-top: 0.75rem;
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .user-dropdown {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .user-dropdown .dropdown-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .user-dropdown .dropdown-menu {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
         /* Main Content */
         .container.main-content {
             flex: 1;
@@ -340,6 +416,15 @@
             color: var(--neutral-600) !important;
         }
         
+        /* For RTL support in dropdown */
+        [dir="rtl"] .user-dropdown .dropdown-menu {
+            text-align: right;
+        }
+
+        [dir="rtl"] .user-dropdown .dropdown-item {
+            text-align: right;
+        }
+
         /* Ensure proper RTL for Arabic text in footer */
         .text-right[dir="rtl"] {
             text-align: left !important;
@@ -548,26 +633,70 @@
                     </a>
                 </li>
                 {% endif %}
+                
+                <!-- Add Profile link for regular logged-in users -->
+                {% if user.is_authenticated and not user.is_staff %}
+                <li class="nav-item">
+                    <a class="nav-link {% if '/users/profile/' in request.path %}active{% endif %}" 
+                       href="{% url 'users:profile' %}">
+                        <i class="bi bi-person"></i> 
+                        <span class="nav-text">My Profile</span>
+                    </a>
+                </li>
+                {% endif %}
             </ul>
             
             <!-- Authentication Links -->
             <div class="auth-links">
                 {% if not user.is_authenticated %}
+                <!-- Show both user login and admin login for non-authenticated users -->
+                <a href="{% url 'users:login' %}" class="auth-link">
+                    <i class="bi bi-person"></i> User Login
+                </a>
                 <a href="/admin/login/?next=/admin/" class="auth-link admin">
                     <i class="bi bi-shield-lock"></i> Admin Login
                 </a>
                 {% endif %}
                 
-                {% if user.is_staff %}
-                <a href="/admin/" class="auth-link admin">
-                    <i class="bi bi-gear"></i> Admin Panel
-                </a>
-                {% endif %}
-                
+                <!-- Show appropriate links based on user type -->
                 {% if user.is_authenticated %}
-                <a href="/admin/logout/" class="auth-link logout">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
+                    {% if user.is_staff %}
+                    <!-- Admin User Links -->
+                    <a href="/admin/" class="auth-link admin">
+                        <i class="bi bi-gear"></i> Admin Panel
+                    </a>
+                    <a href="/admin/logout/" class="auth-link logout">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                    {% else %}
+                    <!-- Regular User Links -->
+                    <div class="user-dropdown dropdown">
+                        <a href="#" class="auth-link dropdown-toggle" 
+                           data-bs-toggle="dropdown" 
+                           aria-expanded="false">
+                            <i class="bi bi-person-circle me-1"></i>
+                            {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'users:profile' %}">
+                                    <i class="bi bi-person me-2"></i> My Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/chat/">
+                                    <i class="bi bi-chat-dots me-2"></i> Start Chat
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'users:logout' %}">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -684,5 +813,6 @@ function hideLoading(element, originalText) {
 </script>
 
 {% block extra_js %}{% endblock %}
+{% block modals %}{% endblock %}
 </body>
 </html>

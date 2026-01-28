@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Admin Login - Bosala AI{% endblock %}
+{% block title %}User Login - Bosala AI{% endblock %}
 
 {% block content %}
 <div class="login-container" dir="rtl">
@@ -16,16 +16,26 @@
                              class="mb-2">
                     </div>
                     <h2 class="login-title">
-                        <i class="bi bi-shield-lock ms-2"></i>
-                        بوابة المشرفين
+                        <i class="bi bi-person ms-2"></i>
+                        تسجيل الدخول
                     </h2>
                     <p class="login-subtitle">
-                        نظام إدارة Bosala AI - دخول المشرفين
+                        نظام Bosala AI - دخول المستخدمين
                     </p>
                 </div>
 
                 <!-- Login Form -->
                 <div class="login-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} ms-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                    
                     {% if form.errors %}
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle ms-2"></i>
@@ -50,9 +60,11 @@
                         {% endif %}
                     {% endif %}
 
-                    <form method="post" action="{% url 'admin:login' %}">
+                    <form method="post" action="{% url 'users:login' %}">
                         {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ next }}">
+                        {% if next %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                        {% endif %}
                         
                         <!-- Username Field -->
                         <div class="form-group mb-3">
@@ -102,7 +114,17 @@
                             تسجيل الدخول
                         </button>
 
-                        <!-- Back to Home -->
+                        <!-- Registration Link -->
+                        <div class="text-center mb-2">
+                            <p class="small text-muted">
+                                ليس لديك حساب؟ 
+                                <a href="{% url 'users:register' %}" class="text-decoration-none">
+                                    سجل الآن
+                                </a>
+                            </p>
+                        </div>
+
+                        <!-- Forgot Password & Back to Home -->
                         <div class="text-center mt-2">
                             <a href="/" class="text-decoration-none small">
                                 <i class="bi bi-arrow-left ms-1"></i>
@@ -308,6 +330,12 @@
         border-right-color: #0d6efd;
     }
 
+    .alert-success {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #0a3622;
+        border-right-color: #198754;
+    }
+
     .alert .btn-close {
         margin-right: auto;
         margin-left: 0.5rem;
@@ -366,7 +394,6 @@
         .login-body {
             padding: 2rem;
         }
-        
     }
 
     @media (min-width: 992px) {
@@ -511,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
     // Auto-hide alerts after 3 seconds
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(function(alert) {
