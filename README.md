@@ -1,118 +1,106 @@
-# 🧠 Arabic RAG Chatbot
+# 🧠 **Arabic RAG Chatbot (Bosala AI)**
 
-A **Retrieval-Augmented Generation (RAG)** chatbot for Arabic question answering.  
-It retrieves relevant Arabic passages from the **ARCD dataset** and generates answers using **Arabic GPT-2 (`aubmindlab/aragpt2-base`)**.  
-The system is modular, well-structured, and fully **Dockerized**, allowing real-time interaction through the command line.
+**Bosala AI** is an Arabic Retrieval-Augmented Generation (**RAG**) chatbot that answers Arabic questions by retrieving relevant content from a vector database and generating responses using **Google Gemini**. The project supports both a web interface and command-line tools, is fully **Dockerized**, and is designed to be easy to use even for users with no prior ML or backend experience. 
 
 ---
 
-## 🚀 Features
-- **Arabic text preprocessing & normalization**
-- **Semantic embeddings** using multilingual Arabic embedding model  (`abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16`)
-- **Vector storage & retrieval** using **Qdrant**
-- **Arabic GPT-2 answer generation** (`aubmindlab/aragpt2-base`)
-- **Evaluation metrics:** `BLEU` and `F1`
-- **Docker-based reproducibility**
-- **CLI tools** for each pipeline step
+## **What This Project Does**
+- Stores Arabic documents as semantic vectors (embeddings) in `Qdrant` collection.
+- Searches for the most relevant content when a user asks a question
+- Sends the retrieved context to `Gemini` to generate a high-quality Arabic answer
+- Tracks usage and performance through an analytics dashboard
+- Provides user accounts, chat history, and admin controls via a web app
+- Allow administrators to direct the compass to any knowledge base, through the `ingest` interface that processes texts and stores them in the database
 
 ---
 
-## 🏗️ Project Structure
-```plaintext
-rag_arabic_chatbot/
-│
-├── ragchat/
-│ ├── init.py
-│ ├── cli.py # Load and preprocess ARCD dataset
-│ ├── preprocessing.py # Arabic normalization and cleaning
-│ ├── tokenization.py # Tokenization logic
-│ ├── embeddings.py # Sentence embeddings
-│ ├── qdrant_index.py # Qdrant database interface
-│ ├── retriever.py # Retrieval logic from Qdrant
-│ ├── generator.py # GPT-2 based answer generator
-│ ├── pipeline.py # Combined RAG pipeline (retrieval + generation)
-│ ├── embed_contexts_cli.py # CLI for embedding contexts
-│ ├── embed_answers_cli.py # CLI for embedding answers
-│ ├── search_cli.py # CLI to test retrieval
-│ ├── chat_cli.py # Interactive chatbot
-│ ├── evaluate_cli.py # BLEU/F1 evaluation
-│ └── config.py # Paths, models, constants
-│
-├── data/
-│ ├── raw/ # Raw dataset
-│ ├── processed/ # Cleaned/tokenized dataset
-│ └── qdrant_storage/ # Persistent Qdrant storage
-│
-├── Dockerfile # Image definition for ragapp
-├── docker-compose.yml
-├── requirements.txt # Dependencies
-└── README.md
-```
----
-## ⚙️ How to Run
-### 1️⃣ Build the project
-```bash
-docker compose build
-```
-### 2️⃣ Start Qdrant
-```bash
-docker compose up -d qdrant
-```
-### 3️⃣ Embed and store data
-```bash
-docker compose run --rm ragapp python -m ragchat.embed_contexts_cli
-docker compose run --rm ragapp python -m ragchat.embed_answers_cli
-```
-### 4️⃣ Chat with the model
-```bash
-docker compose run --rm chat
-```
+## **Key Features**
+🇵🇸 Arabic-first RAG pipeline
 
-### 5️⃣ Evaluate model (BLEU & F1)
-```
-docker compose run --rm evaluate
-```
-Example output:
-``` 
-Evaluating 50 samples from data/processed/arcd_clean_prepared ...
-BLEU: 0.03
-F1:   0.007
-```
----
-## 📊 Current Results
----
+🤖 Gemini 2.5 Flash for answer generation
 
-|   Metric  |   Value   |
-|-----------|-----------|
-|   BLEU    |   0.03    |
-|    F1     |   0.007   |
+📦 Qdrant vector database for semantic search
 
-- Note: Low values are expected because aubmindlab/aragpt2-base is a general Arabic LM, not instruction-tuned for factual QA.
-- The focus of this project is building a functional RAG pipeline architecture for Arabic language tasks.
+🌐 Django web application
+  - User registration & login
+  - Chat and Ingest UI
+  - Admin & analytics dashboard
+
+🐳 Fully Dockerized
+
+🖥️ CLI tools for ingestion, chat, and evaluation
 
 ---
-## 🧩 System Architecture
-**1. Dataset Loading**
-Loads the `ARCD` (Arabic Reading Comprehension Dataset) from Hugging Face (~1400 QA pairs).
+## **High-Level Architecture**
+```
+User Question → Embedding Model → Qdrant (Vector Search) → Relevant Context → Gemini (Answer Generation) → Final Arabic Answer
+```
+---
+## **Main Components**
 
-**2. Preprocessing & Tokenization**
-Applies Arabic text normalization, removes unwanted symbols, and tokenizes inputs.
+- ragchat/
+  Core RAG logic: embeddings, retrieval, generation, evaluation, CLI tools
 
-**3. Embeddings Generation**
-Encodes passages and answers using
-`abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16.`
+- backend/
+  Django web app:
+  - UI
+  - User authentication
+  - Analytics dashboard
+  - API endpoints
 
-**4. Vector Database (Qdrant)**
-Stores embeddings and enables semantic search for top-k relevant passages.
+- data/
+  Stores raw data, processed data, and Qdrant vector storage
+  
+- load_testing/
+  Uses locust script to test the RAG pipeline 
 
-**5. Retrieval**
-For each question, retrieves the top relevant contexts based on cosine similarity.
+- Docker & Docker Compose
+  Runs everything with a single command
+---
+## **Requirements**
+- Docker
+- Docker Compose
+- Google Gemini API key
 
-**6. Prompt Construction**
-Combines the retrieved contexts and the question into a concise Arabic prompt.
+No Python, Django, or ML knowledge required to run ')
 
-**7. Answer Generation**
-The prompt is passed to `aubmindlab/aragpt2-base` for generating an Arabic response.
+---
+## **Setup (One Time)**
+1. Clone the repository
+    ```
+    git clone https://github.com/your-org/rag_arabic_chatbot.git
+    cd rag_arabic_chatbot
+    ```
+2. Create a .env file
+    ```
+    GEMINI_API_KEY=your_gemini_api_key_here
+    API_SECRET=random_secret
+    EMB_MODEL=abdulrahman-nuzha/intfloat-multilingual-e5-large-arabic-fp16
+    GEN_MODEL=models/gemini-2.5-flash
+    GEN_MAX_NEW_TOKENS=512
+    GEN_TEMPERATURE=0.4
+    TOP_K=5
+    ```
+3. Running the Project
 
-**8. Evaluation**
-`BLEU` and `F1` scores are computed between generated and reference answers.
+   a. Build everything
+    ```
+    docker compose build
+    ```
+   b. Start all services
+    ```
+    docker compose up
+    ```
+This will start:
+  - Qdrant (vector database)
+  - Django backend
+  - RAG services
+
+---
+## **Technologies Used**
+- Google Gemini
+- Qdrant
+- Django
+- Docker
+- Python
+- Sentence Embeddings (Arabic)

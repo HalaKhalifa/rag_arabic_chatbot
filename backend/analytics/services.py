@@ -5,6 +5,7 @@ from .models import ChatEvent
 
 def log_chat_event(
     *,
+    user=None,
     channel: str,
     question: str,
     answer: str,
@@ -20,6 +21,7 @@ def log_chat_event(
     Store a single chat interaction for analytics.
     """
     event = ChatEvent.objects.create(
+        user=user,
         channel=channel,
         question=question,
         answer=answer,
