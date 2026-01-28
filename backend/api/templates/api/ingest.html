@@ -1,0 +1,1169 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة البيانات - Bosala AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ingest Page Styles */
+    .ingest-container {
+        direction: rtl;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Ingest Card */
+    .ingest-card {
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        box-shadow: 0 8px 24px var(--shadow-color);
+        overflow: hidden;
+    }
+
+    .ingest-header {
+        background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-800) 100%);
+        color: white;
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ingest-header h3 {
+        margin: 0;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.8rem;
+    }
+
+    .ingest-header .ingest-badge {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    /* Text Input Area */
+    .text-input-container {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .ingest-textarea {
+        min-height: 200px;
+        border: 2px solid var(--neutral-300);
+        border-radius: 12px;
+        padding: 1.25rem;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        transition: all 0.3s ease;
+        background: var(--neutral-100);
+        resize: vertical;
+        text-align: right;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .ingest-textarea:focus {
+        border-color: var(--primary-500);
+        box-shadow: 0 0 0 0.25rem rgba(64, 145, 108, 0.15);
+        background: white;
+    }
+
+    .ingest-textarea::placeholder {
+        color: var(--neutral-500);
+        opacity: 0.7;
+        font-size: 1rem;
+    }
+
+    .input-label {
+        font-weight: 600;
+        color: var(--primary-700);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .char-counter {
+        position: absolute;
+        left: 1rem;
+        bottom: 1rem;
+        font-size: 0.85rem;
+        color: var(--neutral-600);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        backdrop-filter: blur(4px);
+    }
+
+    /* Ingest Button */
+    .ingest-button {
+        background: linear-gradient(to left, var(--primary-600), var(--primary-700));
+        border: none;
+        padding: 0.75rem 2.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-right: auto;
+        margin-left: auto;
+        min-width: 200px;
+        justify-content: center;
+    }
+
+    .ingest-button:hover {
+        background: linear-gradient(to left, var(--primary-700), var(--primary-800));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(64, 145, 108, 0.25);
+    }
+
+    .ingest-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .ingest-button .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Status Display */
+    .status-container {
+        margin-top: 2rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+    }
+
+    .status-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .status-header h5 {
+        margin: 0;
+        color: var(--primary-700);
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-box {
+        background: linear-gradient(135deg, var(--neutral-100) 0%, var(--neutral-50) 100%);
+        border: 2px solid var(--primary-100);
+        border-radius: 12px;
+        padding: 1.5rem;
+        min-height: 80px;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        text-align: right;
+        transition: all 0.3s ease;
+    }
+
+    .status-box.empty {
+        color: var(--neutral-500);
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        background: var(--neutral-100);
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+    }
+
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .progress-label {
+        font-weight: 600;
+        color: var(--primary-700);
+        font-size: 1rem;
+    }
+
+    .progress-percent {
+        font-weight: 700;
+        color: var(--primary-600);
+        font-size: 1.1rem;
+    }
+
+    .progress-bar {
+        height: 10px;
+        background: var(--neutral-300);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(to right, var(--primary-500), var(--primary-600));
+        border-radius: 5px;
+        width: 0%;
+        transition: width 0.5s ease;
+    }
+
+    /* Stats Cards */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .stat-card {
+        background: var(--primary-50);
+        border: 1px solid var(--primary-100);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-700);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--neutral-600);
+        font-weight: 500;
+    }
+
+    /* File Upload Area */
+    .file-upload-area {
+        border: 2px dashed var(--neutral-400);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: var(--neutral-100);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        cursor: pointer;
+    }
+
+    .file-upload-area:hover {
+        border-color: var(--primary-500);
+        background: var(--primary-50);
+    }
+
+    .file-upload-area.dragover {
+        border-color: var(--primary-600);
+        background: var(--primary-100);
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: var(--primary-500);
+        margin-bottom: 1rem;
+    }
+
+    .upload-text {
+        color: var(--neutral-700);
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .upload-subtext {
+        color: var(--neutral-600);
+        font-size: 0.9rem;
+    }
+
+    /* File List */
+    .file-list {
+        margin-top: 1.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .file-icon {
+        color: var(--primary-600);
+        font-size: 1.2rem;
+    }
+
+    .file-name {
+        font-weight: 500;
+        color: var(--primary-800);
+    }
+
+    .file-size {
+        font-size: 0.85rem;
+        color: var(--neutral-600);
+    }
+
+    .file-remove {
+        background: transparent;
+        border: none;
+        color: var(--neutral-500);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .file-remove:hover {
+        color: #dc3545;
+        background: rgba(220, 53, 69, 0.1);
+    }
+
+    /* Instructions */
+    .instructions {
+        background: linear-gradient(135deg, var(--accent-50) 0%, var(--accent-100) 100%);
+        border: 1px solid var(--accent-200);
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .instructions h6 {
+        color: var(--accent-700);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .instructions ul {
+        margin: 0;
+        padding-right: 1.5rem;
+        color: var(--accent-800);
+    }
+
+    .instructions li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+
+    /* Tabs Navigation */
+    .ingest-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--neutral-300);
+        padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+        background: transparent;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        color: var(--neutral-600);
+        border-radius: 8px 8px 0 0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .tab-btn.active {
+        color: var(--primary-700);
+        background: var(--primary-100);
+        border-bottom: 3px solid var(--primary-600);
+    }
+
+    .tab-btn:hover:not(.active) {
+        background: var(--neutral-200);
+        color: var(--neutral-700);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+
+    /* Recent Uploads */
+    .recent-uploads {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: var(--neutral-100);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .recent-header h6 {
+        margin: 0;
+        color: var(--primary-700);
+        font-weight: 600;
+    }
+
+    .recent-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .recent-item {
+        padding: 0.75rem;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .recent-text {
+        font-weight: 500;
+        color: var(--primary-800);
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .recent-date {
+        font-size: 0.85rem;
+        color: var(--neutral-600);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .ingest-header h3 {
+            font-size: 1.5rem;
+        }
+        
+        .ingest-textarea {
+            min-height: 150px;
+            padding: 1rem;
+        }
+        
+        .ingest-button {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+        }
+        
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .ingest-tabs {
+            flex-direction: column;
+        }
+        
+        .tab-btn {
+            width: 100%;
+            text-align: right;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+        }
+    }
+
+    /* Arabic Typography */
+    .arabic-text {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        text-align: right;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease forwards;
+    }
+
+    /* Custom Alert Styling */
+    .custom-alert {
+        border-radius: 10px;
+        border: none;
+        padding: 1rem 1.25rem;
+        margin: 0;
+    }
+
+    .custom-alert.info {
+        background: linear-gradient(135deg, var(--accent-100) 0%, var(--accent-50) 100%);
+        color: var(--accent-800);
+        border-left: 4px solid var(--accent-500);
+    }
+
+    .custom-alert.success {
+        background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-50) 100%);
+        color: var(--primary-800);
+        border-left: 4px solid var(--primary-500);
+    }
+
+    .custom-alert.warning {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 193, 7, 0.05) 100%);
+        color: #664d03;
+        border-left: 4px solid #ffc107;
+    }
+
+    .custom-alert.danger {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+        color: #58151c;
+        border-left: 4px solid #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ingest-container fade-in">
+    <div class="ingest-card">
+        <!-- Header -->
+        <div class="ingest-header">
+            <h3>
+                <i class="bi bi-database-add"></i>
+                إضافة البيانات إلى النظام
+                <span class="ingest-badge">
+                    <i class="bi bi-translate"></i>
+                    مدعوم باللغة العربية
+                </span>
+            </h3>
+            <p class="mt-2 mb-0" style="opacity: 0.9; font-size: 1rem;">
+                أضف النصوص العربية إلى قاعدة المعرفة لتتمكن من البحث والإجابة عليها لاحقًا.
+            </p>
+        </div>
+
+        <div class="card-body p-4">
+            <!-- Instructions -->
+            <div class="instructions">
+                <h6><i class="bi bi-lightbulb"></i> إرشادات مهمة:</h6>
+                <ul>
+                    <li>يمكنك إضافة النصوص العربية في أي مجال (علمي، أدبي، تقني، إلخ)</li>
+                    <li>النصوص الطويلة سيتم تقسيمها تلقائيًا إلى أجزاء مناسبة</li>
+                    <li>تأكد من جودة النص ووضوحه للحصول على نتائج بحث أفضل</li>
+                    <li>يمكنك إضافة نصوص متعددة لبناء قاعدة معرفية شاملة</li>
+                    <li>النصوص ستضاف إلى مجموعة Qdrant للاسترجاع اللاحق</li>
+                </ul>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="ingest-tabs">
+                <button class="tab-btn active" data-tab="text-tab">
+                    <i class="bi bi-text-paragraph"></i>
+                    نص عادي
+                </button>
+                <button class="tab-btn" data-tab="file-tab">
+                    <i class="bi bi-file-earmark-text"></i>
+                    رفع ملفات
+                </button>
+                <button class="tab-btn" data-tab="url-tab">
+                    <i class="bi bi-link-45deg"></i>
+                    رابط ويب
+                </button>
+            </div>
+
+            <!-- Text Tab -->
+            <div id="text-tab" class="tab-content active">
+                <!-- Text Input Area -->
+                <div class="text-input-container">
+                    <label class="input-label">
+                        <i class="bi bi-pencil-square"></i>
+                        أدخل النص العربي هنا:
+                    </label>
+                    <textarea 
+                        id="ingest-text" 
+                        class="form-control ingest-textarea arabic-text" 
+                        rows="8"
+                        placeholder="مثال: الذكاء الاصطناعي هو فرع من فروع علوم الحاسوب الذي يهتم بتصميم أنظمة ذكية قادرة على محاكاة القدرات الذهنية البشرية والتعلم واتخاذ القرارات. يشمل الذكاء الاصطناعي عدة تقنيات منها التعلم الآلي، المعالجة الطبيعية للغة، الرؤية الحاسوبية، والروبوتات..."
+                        maxlength="10000"
+                    ></textarea>
+                    <div class="char-counter">
+                        <span id="char-count">0</span>/10000 حرف
+                    </div>
+                </div>
+
+                <!-- Text Stats -->
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-value" id="word-count">0</div>
+                        <div class="stat-label">عدد الكلمات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="sentence-count">0</div>
+                        <div class="stat-label">عدد الجمل</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="paragraph-count">0</div>
+                        <div class="stat-label">عدد الفقرات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="chunk-count">0</div>
+                        <div class="stat-label">قطع ستنشئ</div>
+                    </div>
+                </div>
+
+                <!-- Ingest Button -->
+                <div class="text-center mt-4">
+                    <button id="ingest-btn" class="btn ingest-button">
+                        <i class="bi bi-cloud-upload"></i>
+                        <span>بدء إضافة البيانات</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- File Upload Tab -->
+            <div id="file-tab" class="tab-content">
+                <div class="file-upload-area" id="file-drop-area">
+                    <div class="upload-icon">
+                        <i class="bi bi-cloud-arrow-up"></i>
+                    </div>
+                    <div class="upload-text">
+                        اسحب الملفات وأفلتها هنا أو انقر للاختيار
+                    </div>
+                    <div class="upload-subtext">
+                        يدعم الملفات النصية (TXT, PDF, DOCX) حتى 10MB
+                    </div>
+                    <input type="file" id="file-input" multiple accept=".txt,.pdf,.docx" class="d-none">
+                </div>
+
+                <div class="file-list" id="file-list"></div>
+
+                <div class="text-center mt-4">
+                    <button id="upload-files-btn" class="btn ingest-button" disabled>
+                        <i class="bi bi-upload"></i>
+                        <span>رفع الملفات المحددة</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- URL Tab -->
+            <div id="url-tab" class="tab-content">
+                <div class="text-input-container">
+                    <label class="input-label">
+                        <i class="bi bi-link-45deg"></i>
+                        أدخل روابط الويب:
+                    </label>
+                    <textarea 
+                        id="url-input" 
+                        class="form-control ingest-textarea" 
+                        rows="4"
+                        placeholder="https://example.com/article1&#10;https://example.com/article2&#10;https://example.com/document"
+                    ></textarea>
+                    <div class="char-counter">
+                        <span id="url-count">0</span> روابط
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button id="ingest-urls-btn" class="btn ingest-button">
+                        <i class="bi bi-download"></i>
+                        <span>جلب محتوى الروابط</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Display -->
+            <div class="status-container">
+                <div class="status-header">
+                    <h5><i class="bi bi-activity"></i> حالة العملية:</h5>
+                    <small class="text-muted" id="status-time"></small>
+                </div>
+                
+                <div id="ingest-status" class="status-box empty">
+                    <div class="status-content">
+                        لم يتم البدء بأي عملية إضافة بعد. أدخل النص أعلاه واضغط على زر "بدء إضافة البيانات"
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="progress-container" class="progress-container d-none">
+                    <div class="progress-header">
+                        <span class="progress-label">تقدم المعالجة:</span>
+                        <span class="progress-percent" id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Uploads -->
+            <div class="recent-uploads">
+                <div class="recent-header">
+                    <h6><i class="bi bi-clock-history"></i> عمليات الإضافة الأخيرة</h6>
+                    <button id="clear-recent-btn" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-trash"></i> مسح السجل
+                    </button>
+                </div>
+                <div class="recent-list" id="recent-list">
+                    <!-- Recent items will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ingestBtn = document.getElementById('ingest-btn');
+    const uploadFilesBtn = document.getElementById('upload-files-btn');
+    const ingestUrlsBtn = document.getElementById('ingest-urls-btn');
+    const statusDiv = document.getElementById('ingest-status');
+    const statusContent = statusDiv.querySelector('.status-content');
+    const textInput = document.getElementById('ingest-text');
+    const urlInput = document.getElementById('url-input');
+    const charCount = document.getElementById('char-count');
+    const urlCount = document.getElementById('url-count');
+    const statusTime = document.getElementById('status-time');
+    const progressContainer = document.getElementById('progress-container');
+    const progressFill = document.getElementById('progress-fill');
+    const progressPercent = document.getElementById('progress-percent');
+    
+    // Stats elements
+    const wordCount = document.getElementById('word-count');
+    const sentenceCount = document.getElementById('sentence-count');
+    const paragraphCount = document.getElementById('paragraph-count');
+    const chunkCount = document.getElementById('chunk-count');
+    
+    // Tab switching
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    // File upload
+    const fileDropArea = document.getElementById('file-drop-area');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    
+    // Recent uploads
+    const recentList = document.getElementById('recent-list');
+    const clearRecentBtn = document.getElementById('clear-recent-btn');
+    
+    let selectedFiles = [];
+    let uploadHistory = JSON.parse(localStorage.getItem('bosala_upload_history') || '[]');
+    
+    // Update character counter
+    textInput.addEventListener('input', function() {
+        const text = this.value;
+        charCount.textContent = text.length;
+        updateTextStats(text);
+    });
+    
+    // Update URL counter
+    urlInput.addEventListener('input', function() {
+        const urls = this.value.split('\n').filter(url => url.trim().length > 0);
+        urlCount.textContent = urls.length;
+    });
+    
+    // Update text statistics
+    function updateTextStats(text) {
+        if (!text.trim()) {
+            wordCount.textContent = '0';
+            sentenceCount.textContent = '0';
+            paragraphCount.textContent = '0';
+            chunkCount.textContent = '0';
+            return;
+        }
+        
+        // Word count (Arabic words)
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        wordCount.textContent = words.length;
+        
+        // Sentence count (Arabic sentences)
+        const sentences = text.split(/[.!؟]\s+/).filter(s => s.trim().length > 0);
+        sentenceCount.textContent = sentences.length;
+        
+        // Paragraph count
+        const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+        paragraphCount.textContent = paragraphs.length;
+        
+        // Estimated chunks (assuming ~200 words per chunk)
+        const estimatedChunks = Math.ceil(words.length / 200);
+        chunkCount.textContent = estimatedChunks;
+    }
+    
+    // Tab switching
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            // Update active tab button
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show active tab content
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === tabId) {
+                    content.classList.add('active');
+                }
+            });
+        });
+    });
+    
+    // File upload functionality
+    fileDropArea.addEventListener('click', () => fileInput.click());
+    
+    fileDropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileDropArea.classList.add('dragover');
+    });
+    
+    fileDropArea.addEventListener('dragleave', () => {
+        fileDropArea.classList.remove('dragover');
+    });
+    
+    fileDropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileDropArea.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+    });
+    
+    function handleFiles(files) {
+        // Filter for allowed file types
+        const allowedTypes = ['.txt', '.pdf', '.docx', 'text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        
+        files.forEach(file => {
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+            const isAllowed = allowedTypes.includes(fileExt) || allowedTypes.includes(file.type);
+            
+            if (!isAllowed) {
+                showToast(`نوع الملف غير مدعوم: ${file.name}`, 'warning');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showToast(`الملف كبير جدًا: ${file.name} (الحد الأقصى 10MB)`, 'warning');
+                return;
+            }
+            
+            // Check if file already selected
+            const existingIndex = selectedFiles.findIndex(f => f.name === file.name && f.size === file.size);
+            if (existingIndex === -1) {
+                selectedFiles.push(file);
+                updateFileList();
+            } else {
+                showToast('تم إضافة هذا الملف مسبقًا', 'info');
+            }
+        });
+        
+        fileInput.value = ''; // Reset file input
+    }
+    
+    function updateFileList() {
+        fileList.innerHTML = '';
+        
+        if (selectedFiles.length === 0) {
+            fileList.innerHTML = '<div class="text-center text-muted py-3">لم يتم اختيار أي ملفات</div>';
+            uploadFilesBtn.disabled = true;
+            return;
+        }
+        
+        uploadFilesBtn.disabled = false;
+        
+        selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <i class="bi bi-file-text file-icon"></i>
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                </div>
+                <button type="button" class="file-remove" data-index="${index}">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            `;
+            fileList.appendChild(fileItem);
+        });
+        
+        // Add remove functionality
+        document.querySelectorAll('.file-remove').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                selectedFiles.splice(index, 1);
+                updateFileList();
+            });
+        });
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 بايت';
+        const k = 1024;
+        const sizes = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    
+    // Load recent uploads
+    function loadRecentUploads() {
+        recentList.innerHTML = '';
+        
+        if (uploadHistory.length === 0) {
+            recentList.innerHTML = '<div class="text-center text-muted py-3">لا توجد عمليات إضافة سابقة</div>';
+            return;
+        }
+        
+        // Show last 10 uploads
+        const recentUploads = uploadHistory.slice(-10).reverse();
+        
+        recentUploads.forEach(item => {
+            const recentItem = document.createElement('div');
+            recentItem.className = 'recent-item';
+            
+            // Truncate text for display
+            const displayText = item.text.length > 100 
+                ? item.text.substring(0, 100) + '...' 
+                : item.text;
+            
+            recentItem.innerHTML = `
+                <div class="recent-text">${displayText}</div>
+                <div class="recent-date">${new Date(item.timestamp).toLocaleDateString('ar-EG')}</div>
+            `;
+            recentList.appendChild(recentItem);
+        });
+    }
+    
+    // Clear recent uploads
+    clearRecentBtn.addEventListener('click', function() {
+        if (uploadHistory.length === 0) {
+            showToast('لا يوجد سجل للإضافة', 'info');
+            return;
+        }
+        
+        if (confirm('هل أنت متأكد من رغبتك في مسح سجل عمليات الإضافة؟')) {
+            localStorage.removeItem('bosala_upload_history');
+            uploadHistory = [];
+            loadRecentUploads();
+            showToast('تم مسح السجل', 'info');
+        }
+    });
+    
+    // Update status with custom alert
+    function updateStatus(message, type = 'info') {
+        statusDiv.className = 'status-box';
+        statusDiv.classList.remove('empty');
+        
+        const icon = {
+            'info': 'bi-info-circle',
+            'success': 'bi-check-circle',
+            'warning': 'bi-exclamation-triangle',
+            'danger': 'bi-x-circle'
+        }[type] || 'bi-info-circle';
+        
+        statusContent.innerHTML = `
+            <div class="custom-alert ${type}">
+                <div class="d-flex align-items-center">
+                    <i class="bi ${icon} fs-4 me-2"></i>
+                    <div>${message}</div>
+                </div>
+            </div>
+        `;
+        
+        statusTime.textContent = new Date().toLocaleTimeString('ar-EG');
+    }
+    
+    // Update progress bar
+    function updateProgress(percent) {
+        progressContainer.classList.remove('d-none');
+        progressFill.style.width = percent + '%';
+        progressPercent.textContent = Math.round(percent) + '%';
+    }
+    
+    // Hide progress bar
+    function hideProgress() {
+        progressContainer.classList.add('d-none');
+    }
+    
+    // Text ingestion
+    ingestBtn.addEventListener('click', async function() {
+        const text = textInput.value.trim();
+        
+        if (!text) {
+            updateStatus('الرجاء إدخال نص قبل البدء', 'warning');
+            return;
+        }
+        
+        await processIngestion(text, 'text');
+    });
+    
+    // File upload
+    uploadFilesBtn.addEventListener('click', async function() {
+        if (selectedFiles.length === 0) {
+            updateStatus('الرجاء اختيار ملفات أولاً', 'warning');
+            return;
+        }
+        
+        // For now, we'll extract text from the first file
+        // In production, you'd upload files to your backend
+        const file = selectedFiles[0];
+        
+        try {
+            const text = await readFileAsText(file);
+            await processIngestion(text, 'file', file.name);
+        } catch (error) {
+            updateStatus(`خطأ في قراءة الملف: ${error.message}`, 'danger');
+        }
+    });
+    
+    // URL ingestion
+    ingestUrlsBtn.addEventListener('click', async function() {
+        const urls = urlInput.value.split('\n')
+            .map(url => url.trim())
+            .filter(url => url.length > 0);
+        
+        if (urls.length === 0) {
+            updateStatus('الرجاء إدخال روابط قبل البدء', 'warning');
+            return;
+        }
+        
+        // For now, we'll use the first URL
+        // In production, you'd fetch content from URLs
+        updateStatus(`جارٍ جلب المحتوى من ${urls.length} روابط...`, 'info');
+        showToast('ميزة جلب المحتوى من الروابط قيد التطوير', 'info');
+    });
+    
+    // Process ingestion
+    async function processIngestion(text, sourceType, fileName = null) {
+        // Disable buttons and show loading
+        ingestBtn.disabled = true;
+        uploadFilesBtn.disabled = true;
+        ingestUrlsBtn.disabled = true;
+        
+        // Update status
+        updateStatus('جارٍ معالجة النص وإضافته إلى قاعدة المعرفة...', 'info');
+        updateProgress(10);
+        
+        try {
+            updateProgress(30);
+            
+            const res = await fetch("/api/ingest-api/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    text: text
+                })
+            });
+
+            const data = await res.json();
+            updateProgress(70);
+
+            if (!res.ok) {
+                throw new Error(data.error || "فشلت عملية الإضافة");
+            }
+
+            updateProgress(100);
+            updateStatus('تمت إضافة البيانات بنجاح إلى قاعدة المعرفة', 'success');
+            
+            // Clear input
+            if (sourceType === 'text') {
+                textInput.value = "";
+                charCount.textContent = "0";
+                updateTextStats("");
+            } else if (sourceType === 'file') {
+                selectedFiles = [];
+                updateFileList();
+            }
+            
+            // Add to history
+            const uploadItem = {
+                text: text.substring(0, 200) + (text.length > 200 ? '...' : ''),
+                type: sourceType,
+                fileName: fileName,
+                timestamp: new Date().toISOString(),
+                chunks: data.chunks || 0
+            };
+            
+            uploadHistory.push(uploadItem);
+            if (uploadHistory.length > 50) {
+                uploadHistory = uploadHistory.slice(-50);
+            }
+            
+            localStorage.setItem('bosala_upload_history', JSON.stringify(uploadHistory));
+            loadRecentUploads();
+            
+            showToast('تمت إضافة البيانات بنجاح', 'success');
+            
+        } catch (err) {
+            console.error('Error:', err);
+            updateStatus(`خطأ: ${err.message}`, 'danger');
+            showToast('حدث خطأ في عملية الإضافة', 'error');
+            
+        } finally {
+            // Re-enable buttons
+            setTimeout(() => {
+                ingestBtn.disabled = false;
+                uploadFilesBtn.disabled = false;
+                ingestUrlsBtn.disabled = false;
+                hideProgress();
+            }, 1000);
+        }
+    }
+    
+    // Helper function to read file as text
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('فشل قراءة الملف'));
+            reader.readAsText(file);
+        });
+    }
+    
+    // Initialize
+    updateTextStats('');
+    loadRecentUploads();
+});
+</script>
+{% endblock %}

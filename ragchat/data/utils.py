@@ -1,6 +1,7 @@
 import re
 from typing import List
 from ragchat.logger import logger
+import hashlib
 
 def clean_unicode(text: str) -> str:
     try:
@@ -72,3 +73,15 @@ def chunk_sentences(sentences: List[str], group_size: int = 5) -> List[str]:
     except Exception as e:
         logger.error(f"chunk_sentences() failed: {e}")
         return []
+
+def make_hash_id(text: str) -> str:
+    """Return a stable SHA-256 hash for text."""
+    try:
+        raw_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        # Convert to UUID format: 8-4-4-4-12 since qdrant dont accept 64-char hex string
+        uid = f"{raw_hash[0:8]}-{raw_hash[8:12]}-{raw_hash[12:16]}-{raw_hash[16:20]}-{raw_hash[20:32]}"
+
+        return uid
+    except Exception as e:
+        logger.error(f"make_hash_id() failed: {e}")
+        return None

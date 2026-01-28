@@ -5,6 +5,7 @@ from ragchat.config import RAGSettings
 from ragchat.core.embeddings import TextEmbedder
 from ragchat.storage.qdrant_index import QdrantIndex
 from ragchat.logger import logger
+from ragchat.data.utils import make_hash_id
 
 app = typer.Typer(help="Embed ARCD contexts and store them in Qdrant.")
 
@@ -63,14 +64,17 @@ def extract_chunks(split):
         answer_text = answer_list[0] if answer_list else None
 
         for j, chunk in enumerate(ex["chunks"]):
+            hash_id = make_hash_id(chunk)
             all_texts.append(chunk)
             all_payloads.append({
-                "id": i,
+                "id": hash_id,
+                "original_example_id": i,
                 "chunk_index": j,
                 "context_text": chunk,
                 "answer_text": answer_text,
                 "raw_context": ex.get("context"),
                 "question": ex.get("question"),
+                "hash": hash_id,
             })
 
     return all_texts, all_payloads
@@ -111,7 +115,7 @@ def embed_contexts(
                 name=collection,
                 vectors=vectors,
                 payloads=batch_payloads,
-                start_id=start
+                start_id=None
             )
 
         logger.info("All chunks embedded and stored successfully!")
