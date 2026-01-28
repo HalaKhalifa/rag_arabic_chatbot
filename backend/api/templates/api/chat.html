@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}محادثة Bousola AI{% endblock %}
+{% block title %}محادثة Bosala AI{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -377,7 +377,7 @@
         <div class="chat-header">
             <h3>
                 <i class="bi bi-chat-left-text-fill"></i>
-                محادثة Bousola AI
+                محادثة Bosala AI
                 <span class="arabic-badge">
                     <i class="bi bi-translate"></i>
                     مدعوم باللغة العربية
@@ -484,221 +484,305 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const askBtn = document.getElementById('ask-btn');
-    const questionInput = document.getElementById('question');
-    const answerBox = document.getElementById('answer-box');
-    const answerContent = answerBox.querySelector('.answer-content');
-    const charCount = document.getElementById('char-count');
-    const answerTime = document.getElementById('answer-time');
-    const sourcesSection = document.getElementById('sources-section');
-    const sourcesList = document.getElementById('sources-list');
-    const historyList = document.getElementById('history-list');
-    const historyEmpty = document.getElementById('history-empty');
-    const historyCount = document.getElementById('history-count');
-    const clearHistoryContainer = document.getElementById('clear-history-container');
-    
-    let chatHistory = JSON.parse(localStorage.getItem('bousola_chat_history') || '[]');
-    
-    // Update character counter
-    questionInput.addEventListener('input', function() {
-        charCount.textContent = this.value.length;
-    });
-    
-    // Load chat history and update UI
-    function loadChatHistory() {
-        // Update count
-        historyCount.textContent = chatHistory.length;
+    document.addEventListener('DOMContentLoaded', function() {
+        const askBtn = document.getElementById('ask-btn');
+        const questionInput = document.getElementById('question');
+        const answerBox = document.getElementById('answer-box');
+        const answerContent = answerBox.querySelector('.answer-content');
+        const charCount = document.getElementById('char-count');
+        const answerTime = document.getElementById('answer-time');
+        const sourcesSection = document.getElementById('sources-section');
+        const sourcesList = document.getElementById('sources-list');
+        const historyList = document.getElementById('history-list');
+        const historyEmpty = document.getElementById('history-empty');
+        const historyCount = document.getElementById('history-count');
+        const clearHistoryContainer = document.getElementById('clear-history-container');
         
-        if (chatHistory.length === 0) {
-            historyEmpty.classList.remove('d-none');
-            historyList.classList.add('d-none');
-            updateClearHistoryButton();
-            return;
+        let chatHistory = []; // Add this variable declaration
+        
+        // Update character counter
+        questionInput.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+        
+        // Load chat history from API
+        async function loadUserHistory() {
+            try {
+                const res = await fetch("/api/chat-history/");
+                if (res.ok) {
+                    const data = await res.json();
+                    chatHistory = data.results || [];
+                    updateHistoryUI();
+                } else {
+                    console.error('Failed to load chat history:', res.status);
+                    // Fallback to localStorage if not authenticated
+                    const saved = localStorage.getItem('bosala_chat_history');
+                    if (saved) {
+                        chatHistory = JSON.parse(saved);
+                        updateHistoryUI();
+                    } else {
+                        chatHistory = [];
+                        updateHistoryUI();
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading chat history:', err);
+                const saved = localStorage.getItem('bosala_chat_history');
+                if (saved) {
+                    chatHistory = JSON.parse(saved);
+                } else {
+                    chatHistory = [];
+                }
+                updateHistoryUI();
+            }
         }
         
-        historyEmpty.classList.add('d-none');
-        historyList.classList.remove('d-none');
-        historyList.innerHTML = '';
+        // Update the history UI
+        function updateHistoryUI() {
+            // Update count
+            historyCount.textContent = chatHistory.length;
+            
+            if (chatHistory.length === 0) {
+                historyEmpty.classList.remove('d-none');
+                historyList.classList.add('d-none');
+                updateClearHistoryButton();
+                return;
+            }
+            
+            historyEmpty.classList.add('d-none');
+            historyList.classList.remove('d-none');
+            historyList.innerHTML = '';
+            
+            // Show last 5 questions
+            const recentHistory = chatHistory.slice(-5).reverse();
+            
+            recentHistory.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `
+                    <div class="history-question">${item.question.substring(0, 60)}${item.question.length > 60 ? '...' : ''}</div>
+                    <div class="history-date">
+                        <i class="bi bi-calendar"></i> ${new Date(item.timestamp).toLocaleDateString('ar-EG')}
+                    </div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    questionInput.value = item.question;
+                    charCount.textContent = item.question.length;
+                    answerBox.className = 'answer-box';
+                    answerContent.innerHTML = item.answer;
+                    answerTime.textContent = `آخر تحديث: ${new Date(item.timestamp).toLocaleString('ar-EG')}`;
+                    answerBox.scrollIntoView({ behavior: 'smooth' });
+                });
+                
+                historyList.appendChild(li);
+            });
+            
+            updateClearHistoryButton();
+        }
         
-        // Show last 5 questions
-        const recentHistory = chatHistory.slice(-5).reverse();
-        
-        recentHistory.forEach((item, index) => {
-            const li = document.createElement('li');
-            li.className = 'history-item';
-            li.innerHTML = `
-                <div class="history-question">${item.question.substring(0, 60)}${item.question.length > 60 ? '...' : ''}</div>
-                <div class="history-date">
-                    <i class="bi bi-calendar"></i> ${new Date(item.timestamp).toLocaleDateString('ar-EG')}
-                </div>
+        // Update or create clear history button
+        function updateClearHistoryButton() {
+            clearHistoryContainer.innerHTML = '';
+            
+            if (chatHistory.length === 0) {
+                // Don't show button if no history
+                return;
+            }
+            
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'btn btn-sm btn-outline-black clear-history-btn';
+            clearBtn.innerHTML = '<i class="bi bi-trash me-1"></i> مسح سجل المحادثات';
+            clearBtn.onclick = clearChatHistory;
+            
+            clearHistoryContainer.appendChild(clearBtn);
+        }
+    
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    
+        // Clear chat history
+        async function clearChatHistory() {
+            if (chatHistory.length === 0) {
+                showToast('لا يوجد سجل محادثات للمسح', 'info');
+                return;
+            }
+            
+            if (confirm('هل أنت متأكد من رغبتك في مسح سجل المحادثات؟')) {
+                try {
+                    const res = await fetch("/api/clear-chat-history/", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    
+                    if (res.ok) {
+                        // Clear local state
+                        chatHistory = [];
+                        localStorage.removeItem('bosala_chat_history');
+                        updateHistoryUI();
+                        showToast('تم مسح سجل المحادثات', 'success');
+                    } else {
+                        showToast('فشل في مسح سجل المحادثات', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error clearing history:', err);
+                    showToast('حدث خطأ أثناء محاولة المسح', 'error');
+                }
+            }
+        }
+    
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            // Check if toast container exists
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.position = 'fixed';
+                toastContainer.style.top = '20px';
+                toastContainer.style.right = '20px';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show`;
+            toast.style.minWidth = '300px';
+            toast.style.marginBottom = '10px';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             
-            li.addEventListener('click', () => {
-                questionInput.value = item.question;
-                charCount.textContent = item.question.length;
-                answerBox.className = 'answer-box';
-                answerContent.innerHTML = item.answer;
-                answerTime.textContent = `آخر تحديث: ${new Date(item.timestamp).toLocaleString('ar-EG')}`;
-                answerBox.scrollIntoView({ behavior: 'smooth' });
-            });
+            toastContainer.appendChild(toast);
             
-            historyList.appendChild(li);
-        });
-        
-        updateClearHistoryButton();
-    }
-    
-    // Update or create clear history button
-    function updateClearHistoryButton() {
-        clearHistoryContainer.innerHTML = '';
-        
-        if (chatHistory.length === 0) {
-            // Don't show button if no history
-            return;
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
         }
         
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'btn btn-sm btn-outline-black clear-history-btn';
-        clearBtn.innerHTML = '<i class="bi bi-trash me-1"></i> مسح سجل المحادثات';
-        clearBtn.onclick = clearChatHistory;
+        // Initialize - load history
+        loadUserHistory();
         
-        clearHistoryContainer.appendChild(clearBtn);
-    }
-    
-    // Clear chat history
-    function clearChatHistory() {
-        if (chatHistory.length === 0) {
-            showToast('لا يوجد سجل محادثات للمسح', 'info');
-            return;
-        }
-        
-        if (confirm('هل أنت متأكد من رغبتك في مسح سجل المحادثات؟')) {
-            localStorage.removeItem('bousola_chat_history');
-            chatHistory = [];
-            loadChatHistory();
-            showToast('تم مسح سجل المحادثات', 'info');
-        }
-    }
-    
-    // Initialize
-    loadChatHistory();
-    
-    // Ask button handler
-    askBtn.addEventListener('click', async function() {
-        const question = questionInput.value.trim();
-        
-        if (!question) {
-            showToast('الرجاء كتابة سؤال قبل الإرسال', 'warning');
-            questionInput.focus();
-            return;
-        }
-        
-        // Disable button and show loading
-        askBtn.disabled = true;
-        askBtn.innerHTML = '<div class="spinner"></div> جاري المعالجة...';
-        
-        // Update answer box
-        answerBox.className = 'answer-box loading';
-        answerContent.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">جارٍ البحث عن الإجابة...</p></div>';
-        answerTime.textContent = '';
-        sourcesSection.classList.add('d-none');
-        
-        try {
-            const startTime = Date.now();
-            const res = await fetch('/api/ask/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-KEY': 'yafahala2810khkh',
-                    'Accept-Language': 'ar'
-                },
-                body: JSON.stringify({
-                    question: question
-                })
-            });
+        // Ask button handler
+        askBtn.addEventListener('click', async function() {
+            const question = questionInput.value.trim();
             
-            const data = await res.json();
-            const elapsedTime = Date.now() - startTime;
-            
-            if (!res.ok) {
-                throw new Error(data.error || 'حدث خطأ في الخادم');
+            if (!question) {
+                showToast('الرجاء كتابة سؤال قبل الإرسال', 'warning');
+                questionInput.focus();
+                return;
             }
+            
+            // Disable button and show loading
+            askBtn.disabled = true;
+            askBtn.innerHTML = '<div class="spinner"></div> جاري المعالجة...';
             
             // Update answer box
-            answerBox.className = 'answer-box';
-            answerContent.innerHTML = data.answer || 'لم يتم إرجاع إجابة';
-            answerTime.textContent = `تمت المعالجة في ${elapsedTime} مللي ثانية`;
+            answerBox.className = 'answer-box loading';
+            answerContent.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">جارٍ البحث عن الإجابة...</p></div>';
+            answerTime.textContent = '';
+            sourcesSection.classList.add('d-none');
             
-            // Show sources if available
-            if (data.sources && data.sources.length > 0) {
-                sourcesSection.classList.remove('d-none');
-                sourcesList.innerHTML = '';
-                
-                data.sources.forEach((source, index) => {
-                    const sourceDiv = document.createElement('div');
-                    sourceDiv.className = 'source-item';
-                    sourceDiv.innerHTML = `
-                        <span class="source-score">${source.score ? Math.round(source.score * 100) + '%' : 'مصدر'}</span>
-                        ${source.content ? source.content.substring(0, 150) + (source.content.length > 150 ? '...' : '') : 'مصدر غير معروف'}
-                    `;
-                    sourcesList.appendChild(sourceDiv);
+            try {
+                const startTime = Date.now();
+                const res = await fetch('/api/ask/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept-Language': 'ar',
+                        'X-CSRFToken': getCookie('csrftoken') // Add CSRF token
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
                 });
+                
+                const data = await res.json();
+                const elapsedTime = Date.now() - startTime;
+                
+                if (!res.ok) {
+                    throw new Error(data.error || 'حدث خطأ في الخادم');
+                }
+                
+                // Update answer box
+                answerBox.className = 'answer-box';
+                answerContent.innerHTML = data.answer || 'لم يتم إرجاع إجابة';
+                answerTime.textContent = `تمت المعالجة في ${elapsedTime} مللي ثانية`;
+                
+                // Show sources if available
+                if (data.sources && data.sources.length > 0) {
+                    sourcesSection.classList.remove('d-none');
+                    sourcesList.innerHTML = '';
+                    
+                    data.sources.forEach((source, index) => {
+                        const sourceDiv = document.createElement('div');
+                        sourceDiv.className = 'source-item';
+                        sourceDiv.innerHTML = `
+                            <span class="source-score">${source.score ? Math.round(source.score * 100) + '%' : 'مصدر'}</span>
+                            ${source.content ? source.content.substring(0, 150) + (source.content.length > 150 ? '...' : '') : 'مصدر غير معروف'}
+                        `;
+                        sourcesList.appendChild(sourceDiv);
+                    });
+                }
+                
+                // Reload history from server to get the latest
+                await loadUserHistory();
+                
+                showToast('تم استلام الإجابة بنجاح', 'success');
+                
+            } catch (err) {
+                console.error('Error:', err);
+                answerBox.className = 'answer-box';
+                answerContent.innerHTML = `<div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>خطأ:</strong> ${err.message}
+                </div>`;
+                showToast('حدث خطأ في الحصول على الإجابة', 'error');
+                
+            } finally {
+                // Re-enable button
+                askBtn.disabled = false;
+                askBtn.innerHTML = '<i class="bi bi-send"></i> <span>إرسال السؤال</span>';
             }
-            
-            // Add to chat history
-            const chatItem = {
-                question: question,
-                answer: data.answer || '',
-                timestamp: new Date().toISOString(),
-                sources: data.sources || []
-            };
-            
-            chatHistory.push(chatItem);
-            if (chatHistory.length > 20) {
-                chatHistory = chatHistory.slice(-20); // Keep last 20 items
-            }
-            
-            localStorage.setItem('bousola_chat_history', JSON.stringify(chatHistory));
-            loadChatHistory();
-            
-            showToast('تم استلام الإجابة بنجاح', 'success');
-            
-        } catch (err) {
-            console.error('Error:', err);
-            answerBox.className = 'answer-box';
-            answerContent.innerHTML = `<div class="alert alert-danger" role="alert">
-                <i class="bi bi-exclamation-triangle"></i>
-                <strong>خطأ:</strong> ${err.message}
-            </div>`;
-            showToast('حدث خطأ في الحصول على الإجابة', 'error');
-            
-        } finally {
-            // Re-enable button
-            askBtn.disabled = false;
-            askBtn.innerHTML = '<i class="bi bi-send"></i> <span>إرسال السؤال</span>';
-        }
-    });
-    
-    // Enter key support (Ctrl+Enter to submit)
-    questionInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            e.preventDefault();
-            askBtn.click();
-        }
-    });
-    
-    // Copy answer button
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn btn-sm btn-outline-primary me-2';
-    copyBtn.innerHTML = '<i class="bi bi-copy"></i> نسخ الإجابة';
-    copyBtn.onclick = function() {
-        const text = answerContent.textContent;
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('تم نسخ الإجابة إلى الحافظة', 'success');
         });
-    };
-    document.querySelector('.answer-header').appendChild(copyBtn);
-});
+        
+        // Enter key support (Ctrl+Enter to submit)
+        questionInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                askBtn.click();
+            }
+        });
+        
+        // Copy answer button
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn btn-sm btn-outline-primary me-2';
+        copyBtn.innerHTML = '<i class="bi bi-copy"></i> نسخ الإجابة';
+        copyBtn.onclick = function() {
+            const text = answerContent.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('تم نسخ الإجابة إلى الحافظة', 'success');
+            });
+        };
+        document.querySelector('.answer-header').appendChild(copyBtn);
+    });
 </script>
 {% endblock %}

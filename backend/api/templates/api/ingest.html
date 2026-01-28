@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}إضافة البيانات - Bousola AI{% endblock %}
+{% block title %}إضافة البيانات - Bosala AI{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -781,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearRecentBtn = document.getElementById('clear-recent-btn');
     
     let selectedFiles = [];
-    let uploadHistory = JSON.parse(localStorage.getItem('bousola_upload_history') || '[]');
+    let uploadHistory = JSON.parse(localStorage.getItem('bosala_upload_history') || '[]');
     
     // Update character counter
     textInput.addEventListener('input', function() {
@@ -981,7 +981,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (confirm('هل أنت متأكد من رغبتك في مسح سجل عمليات الإضافة؟')) {
-            localStorage.removeItem('bousola_upload_history');
+            localStorage.removeItem('bosala_upload_history');
             uploadHistory = [];
             loadRecentUploads();
             showToast('تم مسح السجل', 'info');
@@ -1086,11 +1086,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             updateProgress(30);
             
-            const res = await fetch("/api/ingest/", {
+            const res = await fetch("/api/ingest-api/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-API-KEY": "yafahala2810khkh"
                 },
                 body: JSON.stringify({
                     text: text
@@ -1131,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 uploadHistory = uploadHistory.slice(-50);
             }
             
-            localStorage.setItem('bousola_upload_history', JSON.stringify(uploadHistory));
+            localStorage.setItem('bosala_upload_history', JSON.stringify(uploadHistory));
             loadRecentUploads();
             
             showToast('تمت إضافة البيانات بنجاح', 'success');
