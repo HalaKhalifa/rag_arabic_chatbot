@@ -68,15 +68,19 @@ services:
       APP_MODE: backend
       DJANGO_SETTINGS_MODULE: backend.settings
       API_SECRET: ${API_SECRET}
-      QDRANT_URL: ${QDRANT_URL}
+      QDRANT_URL: http://qdrant:6333
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       EMB_MODEL: ${EMB_MODEL}
       GEN_MODEL: ${GEN_MODEL}
       GEN_MAX_NEW_TOKENS: ${GEN_MAX_NEW_TOKENS}
       GEN_TEMPERATURE: ${GEN_TEMPERATURE}
       TOP_K: ${TOP_K}
+
     volumes:
-      - .:/app
+      - ./backend:/app/backend
+      - ./ragchat:/app/ragchat
+      - ./data:/app/data
+
     ports:
       - "8000:8000"
     depends_on:

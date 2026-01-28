@@ -4,7 +4,7 @@ from tqdm import tqdm
 from ragchat.config import RAGSettings
 from ragchat.core.embeddings import TextEmbedder
 from ragchat.storage.qdrant_index import QdrantIndex
-from ragchat.data.utils import normalize_arabic_text
+from ragchat.data.utils import normalize_arabic_text, make_hash_id
 from ragchat.logger import logger
 
 app = typer.Typer(help="Embed ARCD answers for retrieval evaluation.")
@@ -61,12 +61,16 @@ def extract_answers(split):
         answers = ex.get("answers", {}).get("text", [])
         if answers:
             ans = normalize_arabic_text(answers[0])
+            hash_id = make_hash_id(ans)
+
             answer_texts.append(ans)
             payloads.append({
-                "id": i,
+                "id": hash_id,
+                "original_example_id": i,
                 "answer_text": ans,
                 "context": ex.get("context"),
                 "question": ex.get("question"),
+                "hash": hash_id,
             })
 
     return answer_texts, payloads
@@ -110,7 +114,7 @@ def embed_answers(
                 name=collection,
                 vectors=vectors,
                 payloads=batch_payloads,
-                start_id=start
+                start_id=None
             )
 
         logger.info("Finished embedding answers!")
