@@ -59,3 +59,29 @@ services:
       - ./data:/app/data
     depends_on:
       - qdrant
+
+  backend:
+    build: .
+    image: rag_arabic_chatbot-ragapp
+    command: python backend/manage.py runserver 0.0.0.0:8000
+    environment:
+      APP_MODE: backend
+      DJANGO_SETTINGS_MODULE: backend.settings
+      API_SECRET: ${API_SECRET}
+      QDRANT_URL: http://qdrant:6333
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      EMB_MODEL: ${EMB_MODEL}
+      GEN_MODEL: ${GEN_MODEL}
+      GEN_MAX_NEW_TOKENS: ${GEN_MAX_NEW_TOKENS}
+      GEN_TEMPERATURE: ${GEN_TEMPERATURE}
+      TOP_K: ${TOP_K}
+
+    volumes:
+      - ./backend:/app/backend
+      - ./ragchat:/app/ragchat
+      - ./data:/app/data
+
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
