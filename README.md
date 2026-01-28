@@ -68,7 +68,7 @@ No Python, Django, or ML knowledge required to run ')
 ## **Setup (One Time)**
 1. Clone the repository
     ```
-    git clone https://github.com/your-org/rag_arabic_chatbot.git
+    git clone https://github.com/HalaKhalifa/rag_arabic_chatbot.git
     cd rag_arabic_chatbot
     ```
 2. Create a .env file
